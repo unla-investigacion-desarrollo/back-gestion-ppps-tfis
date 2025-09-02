@@ -75,19 +75,21 @@ docker compose down
 
 You need a `.env` file in the root of the project with the following variables:
 
+```env
 MYSQL_ROOT_PASSWORD=<root_password>
 MYSQL_DATABASE=<database_name>
 MYSQL_USER=<db_user>
 MYSQL_PASSWORD=<db_password>
 MYSQL_PORT=3307
+```
 
 ## Example connection
 
-Host: localhost
-Port: 3307
-User: <db_user>
-Password: <db_password>
-Database: <database_name>
+- Host: localhost
+- Port: 3307
+- User: <db_user>
+- Password: <db_password>
+- Database: <database_name>
 
 You can connect using MySQL Workbench
 

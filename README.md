@@ -64,10 +64,12 @@ This project uses **MySQL 8** inside a Docker container.
 ### Start MySQL
 ```bash
 docker compose up -d
+```
 
 ### Start MySQL
 ```bash
 docker compose down
+```
 
 ## Configuration
 

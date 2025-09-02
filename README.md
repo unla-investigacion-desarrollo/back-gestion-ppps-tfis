@@ -57,6 +57,38 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
+## Database with Docker
+
+This project uses **MySQL 8** inside a Docker container.
+
+### Start MySQL
+```bash
+docker compose up -d
+
+### Start MySQL
+```bash
+docker compose down
+
+## Configuration
+
+You need a `.env` file in the root of the project with the following variables:
+
+MYSQL_ROOT_PASSWORD=<root_password>
+MYSQL_DATABASE=<database_name>
+MYSQL_USER=<db_user>
+MYSQL_PASSWORD=<db_password>
+MYSQL_PORT=3307
+
+## Example connection
+
+Host: localhost
+Port: 3307
+User: <db_user>
+Password: <db_password>
+Database: <database_name>
+
+You can connect using MySQL Workbench
+
 ## Deployment
 
 When you're ready to deploy your NestJS application to production, there are some key steps you can take to ensure it runs as efficiently as possible. Check out the [deployment documentation](https://docs.nestjs.com/deployment) for more information.

@@ -11,6 +11,9 @@ import { LoginDto } from './dto/login.dto';
 import { RegisterStudentDto } from './dto/register-student.dto';
 import { AuthGuard } from './guard/auth.guard';
 import { JwtPayload } from './types/jwt-payload.interface';
+import { RolesGuard } from './guard/roles.guard';
+import { Roles } from './decorators/roles.decorator';
+import { Role } from 'src/users/entities/user.entity';
 
 @Controller('auth')
 export class AuthController {
@@ -24,12 +27,5 @@ export class AuthController {
   @Post('login')
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
-  }
-
-  // Ejemplo
-  @UseGuards(AuthGuard)
-  @Get('profile')
-  getProfile(@Request() req: Request & { user: JwtPayload }) {
-    return req['user'];
   }
 }

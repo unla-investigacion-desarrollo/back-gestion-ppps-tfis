@@ -58,7 +58,6 @@ let AuthService = class AuthService {
             throw new common_1.UnauthorizedException('Credenciales invalidas');
         }
         const payload = {
-            sub: userExists.id,
             email: userExists.email,
             role: userExists.role,
         };

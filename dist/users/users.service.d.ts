@@ -1,5 +1,4 @@
 import { CreateUserDto } from './dto/create-user.dto';
-import { UpdateUserDto } from './dto/update-user.dto';
 import { User } from './entities/user.entity';
 import { Repository, DataSource } from 'typeorm';
 import { Student } from './entities/student.entity';
@@ -18,6 +17,5 @@ export declare class UsersService {
     findOneByDNI(dni: string): Promise<User | null>;
     findAll(): string;
     findOne(id: number): string;
-    update(id: number, updateUserDto: UpdateUserDto): string;
     remove(id: number): string;
 }

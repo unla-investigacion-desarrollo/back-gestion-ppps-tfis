@@ -1,19 +1,7 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Post,
-  UseGuards,
-  Request,
-} from '@nestjs/common';
+import { Body, Controller, Post } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RegisterStudentDto } from './dto/register-student.dto';
-import { AuthGuard } from './guard/auth.guard';
-import { JwtPayload } from './types/jwt-payload.interface';
-import { RolesGuard } from './guard/roles.guard';
-import { Roles } from './decorators/roles.decorator';
-import { Role } from 'src/users/entities/user.entity';
 
 @Controller('auth')
 export class AuthController {

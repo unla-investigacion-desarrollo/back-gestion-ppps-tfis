@@ -1,7 +1,6 @@
 import { IsBoolean, IsString } from 'class-validator';
-import { CreateUserDto } from './create-user.dto';
 
-export class CreateProfessorDto extends CreateUserDto {
+export class CreateProfessorDto {
   @IsString()
   specialization: string;
 

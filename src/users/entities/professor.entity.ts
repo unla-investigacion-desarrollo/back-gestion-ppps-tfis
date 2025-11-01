@@ -1,5 +1,13 @@
-import { Column, Entity, JoinColumn, OneToOne, PrimaryColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  OneToMany,
+  OneToOne,
+  PrimaryColumn,
+} from 'typeorm';
 import { User } from './user.entity';
+import { ActiveProfessorProject } from 'src/project/entities/active-professor-project.entity';
 
 @Entity()
 export class Professor {
@@ -15,4 +23,7 @@ export class Professor {
 
   @Column()
   isTutor: boolean;
+
+  @OneToMany(() => ActiveProfessorProject, (app) => app.professor)
+  activeProjects: ActiveProfessorProject[];
 }

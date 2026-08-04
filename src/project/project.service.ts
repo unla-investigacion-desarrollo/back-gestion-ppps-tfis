@@ -293,7 +293,7 @@ export class ProjectService {
 
     const request = await this.activeStudentProjectRepository.findOne({
       where: {
-        id: studentRequestId,
+        student: { id_user: studentRequestId },
         project: { id: id },
         active: false,
       },
@@ -333,7 +333,7 @@ export class ProjectService {
 
     const request = await this.activeStudentProjectRepository.findOne({
       where: {
-        id: studentRequestId,
+        student: { id_user: studentRequestId },
         project: { id: id },
       },
     });
@@ -367,14 +367,15 @@ export class ProjectService {
 
     const request = await this.activeProfessorProjectRepository.findOne({
       where: {
-        id: professorRequestId,
+        professor: { id_user: professorRequestId },
         project: { id: id },
+        active: false,
       },
       relations: ['professor', 'project'],
     });
 
     if (!request) {
-      throw new NotFoundException('Solicitud no encontrada');
+      throw new NotFoundException('Solicitud no encontrada o ya aprobada');
     }
 
     request.active = true;
@@ -404,7 +405,7 @@ export class ProjectService {
     }
     const request = await this.activeProfessorProjectRepository.findOne({
       where: {
-        id: professorRequestId,
+        professor: { id_user: professorRequestId },
         project: { id: id },
       },
     });

@@ -15,6 +15,7 @@ import * as bcrypt from 'bcrypt';
 import { CreateProfessorDto } from './dto/create-professor.dto';
 import { RegisterProfessorDto } from './dto/register-professor.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { JwtPayload } from 'src/auth/types/jwt-payload.interface';
 
 @Injectable()
 export class UsersService {
@@ -79,12 +80,77 @@ export class UsersService {
     return await this.usersRepository.findOneBy({ dni });
   }
 
-  findAll() {
-    return `This action returns all users`;
+  async findAll() {
+    const users = await this.usersRepository.find();
+    return users.map(({ password, ...user }) => user);
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} user`;
+  async findOne(id: number) {
+    const user = await this.usersRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
+
+  async getProfile(userId: number, requester: JwtPayload) {
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    if (requester.id !== user.id && requester.role !== Role.ADMIN) {
+      throw new ForbiddenException('No tienes permiso para ver este perfil');
+    }
+
+    const baseUser = {
+      id: user.id,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      dni: user.dni,
+      email: user.email,
+      role: user.role,
+    };
+
+    if (user.role === Role.STUDENT) {
+      const student = await this.studentsRepository.findOne({
+        where: { id_user: user.id },
+      });
+
+      if (!student) {
+        return baseUser;
+      }
+
+      return {
+        ...baseUser,
+        yearOfAdmission: student.yearOfAdmission,
+        completedCoursesWithFinal: student.completedCoursesWithFinal,
+        completedCoursesWithoutFinal: student.completedCoursesWithoutFinal,
+      };
+    }
+
+    if (user.role === Role.PROFESSOR) {
+      const professor = await this.professorsRepository.findOne({
+        where: { id_user: user.id },
+      });
+
+      if (!professor) {
+        return baseUser;
+      }
+
+      return {
+        ...baseUser,
+        specialization: professor.specialization,
+        isTutor: professor.isTutor,
+      };
+    }
+
+    return baseUser;
   }
 
   remove(id: number) {

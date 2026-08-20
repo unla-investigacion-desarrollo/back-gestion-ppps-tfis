@@ -33,6 +33,16 @@ export class UsersController {
     return this.usersService.findOne(+id);
   }
 
+  @Get(':id/profile')
+  @Roles(Role.ADMIN, Role.STUDENT, Role.PROFESSOR)
+  @UseGuards(AuthGuard, RolesGuard)
+  async getProfile(
+    @Param('id') id: string,
+    @Request() req: Request & { user: JwtPayload },
+  ) {
+    return this.usersService.getProfile(+id, req.user);
+  }
+
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.usersService.remove(+id);

@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Project } from './entities/project.entity';
+import { Project, ProjectStatus, ProjectType } from './entities/project.entity';
 import { Repository } from 'typeorm';
 import { Role } from 'src/users/entities/user.entity';
 import { JwtPayload } from 'src/auth/types/jwt-payload.interface';
@@ -50,6 +50,9 @@ export class ProjectService {
         throw new ForbiddenException('Los tutores no pueden crear proyectos');
       }
     }
+    if (createProjectDto.projectType !== ProjectType.OTHER) {
+      createProjectDto.customProjectType = null;
+    }
     const project = this.projectsRepository.create(createProjectDto);
     return await this.projectsRepository.save(project);
   }
@@ -83,14 +86,20 @@ export class ProjectService {
 
       return projects.map((project) => ({
         id: project.id,
+        title: project.title,
         description: project.description,
+        projectType: project.projectType,
+        customProjectType: project.customProjectType,
       }));
     }
 
     if (user.role === Role.STUDENT) {
       return projects.map((project) => ({
         id: project.id,
+        title: project.title,
         description: project.description,
+        projectType: project.projectType,
+        customProjectType: project.customProjectType,
       }));
     }
 
@@ -307,6 +316,11 @@ export class ProjectService {
     request.active = true;
     await this.activeStudentProjectRepository.save(request);
 
+    const project = await this.projectsRepository.findOneBy({ id });
+    if (project && project.status === ProjectStatus.PENDING) {
+      project.status = ProjectStatus.IN_PROGRESS;
+      await this.projectsRepository.save(project);
+    }
     return { message: 'Solicitud aprobada correctamente' };
   }
 
@@ -381,6 +395,12 @@ export class ProjectService {
     request.active = true;
 
     await this.activeProfessorProjectRepository.save(request);
+
+    const project = await this.projectsRepository.findOneBy({ id });
+    if (project && project.status === ProjectStatus.PENDING) {
+      project.status = ProjectStatus.IN_PROGRESS;
+      await this.projectsRepository.save(project);
+    }
 
     return { message: 'Solicitud aprobada correctamente' };
   }

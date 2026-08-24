@@ -4,7 +4,6 @@ import {
   IsBoolean,
   IsEmail,
   IsNumber,
-  IsNotEmpty,
   MinLength,
   Length,
   Matches,
@@ -30,6 +29,10 @@ export class UpdateUserDto {
   @IsOptional()
   @IsEmail({}, { message: 'El formato de email no es valido' })
   email?: string;
+
+  @IsOptional()
+  @IsString()
+  fileNumber?: string;
 
   @IsOptional()
   @IsNumber()

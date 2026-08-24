@@ -26,6 +26,12 @@ export class User {
   @Column()
   password: string;
 
+  @Column({ nullable: true, unique: true })
+  fileNumber?: string;
+
+  @Column({ default: true })
+  isActive: boolean;
+
   @Column({ type: 'enum', enum: Role, default: Role.STUDENT })
   role: Role;
 }

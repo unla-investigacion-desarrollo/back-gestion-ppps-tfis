@@ -1,3 +1,7 @@
+/**
+ * Archivo generado con NestJS CLI y luego modificado
+ * para agregar funcionalidades especificas
+ */
 import {
   Controller,
   Get,
@@ -18,6 +22,7 @@ import { RolesGuard } from 'src/auth/guard/roles.guard';
 import { JwtPayload } from 'src/auth/types/jwt-payload.interface';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { UpdateUserStatusDto } from './dto/update-user-status.dto';
 
 @Controller('users')
 export class UsersController {
@@ -34,28 +39,46 @@ export class UsersController {
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.usersService.remove(+id);
+  @Roles(Role.ADMIN)
+  @UseGuards(AuthGuard, RolesGuard)
+  remove(
+    @Param('id') id: string,
+    @Request()
+    req: Request & { user: { id: number; email: string; role: string } },
+  ) {
+    const requesterId = req.user.id;
+    return this.usersService.remove(+id, requesterId);
   }
 
   @Post('register-professor')
   @Roles(Role.ADMIN)
   @UseGuards(AuthGuard, RolesGuard)
-  registerProfessor(
-    @Body() registerProfessorDto: RegisterProfessorDto,
-    @Request() req: Request & { user: JwtPayload },
-  ) {
+  registerProfessor(@Body() registerProfessorDto: RegisterProfessorDto) {
     return this.usersService.registerProfessor(registerProfessorDto);
   }
 
   @Post('register-admin')
   @Roles(Role.ADMIN)
   @UseGuards(AuthGuard, RolesGuard)
-  registerAdmin(
-    @Body() createUserDto: CreateUserDto,
-    @Request() req: Request & { user: JwtPayload },
-  ) {
+  registerAdmin(@Body() createUserDto: CreateUserDto) {
     return this.usersService.registerAdmin(createUserDto);
+  }
+
+  @Patch(':id/status')
+  @Roles(Role.ADMIN)
+  @UseGuards(AuthGuard, RolesGuard)
+  updateStatus(
+    @Param('id') id: string,
+    @Body() updateUserStatusDto: UpdateUserStatusDto,
+    @Request()
+    req: Request & { user: { id: number; email: string; role: string } },
+  ) {
+    const requesterId = req.user.id;
+    return this.usersService.updateStatus(
+      +id,
+      updateUserStatusDto.isActive,
+      requesterId,
+    );
   }
 
   @Patch(':id')

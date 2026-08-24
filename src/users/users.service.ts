@@ -1,10 +1,7 @@
 import {
   ConflictException,
   ForbiddenException,
-  HttpException,
-  InternalServerErrorException,
   Injectable,
-  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
@@ -24,8 +21,6 @@ import { ActiveProfessorProject } from 'src/project/entities/active-professor-pr
 
 @Injectable()
 export class UsersService {
-  private readonly logger = new Logger(UsersService.name);
-
   constructor(
     @InjectRepository(User)
     private usersRepository: Repository<User>,
@@ -161,49 +156,38 @@ export class UsersService {
   }
 
   async remove(id: number) {
-    try {
-      return await this.dataSource.transaction(async (manager) => {
-        const userRepo = manager.getRepository(User);
-        const studentRepo = manager.getRepository(Student);
-        const professorRepo = manager.getRepository(Professor);
-        const activeStudentProjectRepo = manager.getRepository(
-          ActiveStudentProject,
-        );
-        const activeProfessorProjectRepo = manager.getRepository(
-          ActiveProfessorProject,
-        );
+    return this.dataSource.transaction(async (manager) => {
+      const userRepo = manager.getRepository(User);
+      const studentRepo = manager.getRepository(Student);
+      const professorRepo = manager.getRepository(Professor);
+      const activeStudentProjectRepo = manager.getRepository(
+        ActiveStudentProject,
+      );
+      const activeProfessorProjectRepo = manager.getRepository(
+        ActiveProfessorProject,
+      );
 
-        const user = await userRepo.findOne({ where: { id } });
-        if (!user) {
-          throw new NotFoundException('Usuario no encontrado');
-        }
-
-        await activeStudentProjectRepo
-          .createQueryBuilder()
-          .delete()
-          .where('student_id_user = :id', { id })
-          .execute();
-        await activeProfessorProjectRepo
-          .createQueryBuilder()
-          .delete()
-          .where('professor_id_user = :id', { id })
-          .execute();
-        await studentRepo.delete({ id_user: id });
-        await professorRepo.delete({ id_user: id });
-        await userRepo.delete(id);
-
-        return { message: 'Usuario eliminado correctamente' };
-      });
-    } catch (error) {
-      if (error instanceof HttpException) {
-        throw error;
+      const user = await userRepo.findOne({ where: { id } });
+      if (!user) {
+        throw new NotFoundException('Usuario no encontrado');
       }
 
-      this.logger.error(`Error al eliminar el usuario ${id}`, error);
-      throw new InternalServerErrorException(
-        'No se pudo eliminar el usuario',
-      );
-    }
+      await activeStudentProjectRepo
+        .createQueryBuilder()
+        .delete()
+        .where('student_id_user = :id', { id })
+        .execute();
+      await activeProfessorProjectRepo
+        .createQueryBuilder()
+        .delete()
+        .where('professor_id_user = :id', { id })
+        .execute();
+      await studentRepo.delete({ id_user: id });
+      await professorRepo.delete({ id_user: id });
+      await userRepo.delete(id);
+
+      return { message: 'Usuario eliminado correctamente' };
+    });
   }
 
   async createProfessor(

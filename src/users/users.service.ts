@@ -16,8 +16,6 @@ import { CreateProfessorDto } from './dto/create-professor.dto';
 import { RegisterProfessorDto } from './dto/register-professor.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtPayload } from 'src/auth/types/jwt-payload.interface';
-import { ActiveStudentProject } from 'src/project/entities/active-student-project.entity';
-import { ActiveProfessorProject } from 'src/project/entities/active-professor-project.entity';
 
 @Injectable()
 export class UsersService {
@@ -155,39 +153,8 @@ export class UsersService {
     return baseUser;
   }
 
-  async remove(id: number) {
-    return this.dataSource.transaction(async (manager) => {
-      const userRepo = manager.getRepository(User);
-      const studentRepo = manager.getRepository(Student);
-      const professorRepo = manager.getRepository(Professor);
-      const activeStudentProjectRepo = manager.getRepository(
-        ActiveStudentProject,
-      );
-      const activeProfessorProjectRepo = manager.getRepository(
-        ActiveProfessorProject,
-      );
-
-      const user = await userRepo.findOne({ where: { id } });
-      if (!user) {
-        throw new NotFoundException('Usuario no encontrado');
-      }
-
-      await activeStudentProjectRepo
-        .createQueryBuilder()
-        .delete()
-        .where('student_id_user = :id', { id })
-        .execute();
-      await activeProfessorProjectRepo
-        .createQueryBuilder()
-        .delete()
-        .where('professor_id_user = :id', { id })
-        .execute();
-      await studentRepo.delete({ id_user: id });
-      await professorRepo.delete({ id_user: id });
-      await userRepo.delete(id);
-
-      return { message: 'Usuario eliminado correctamente' };
-    });
+  remove(id: number) {
+    return `This action removes a #${id} user`;
   }
 
   async createProfessor(

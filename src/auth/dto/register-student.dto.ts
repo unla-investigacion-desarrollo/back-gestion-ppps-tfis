@@ -2,6 +2,7 @@ import {
   IsEmail,
   IsNotEmpty,
   IsNumber,
+  IsOptional,
   IsString,
   Length,
   Matches,
@@ -32,6 +33,10 @@ export class RegisterStudentDto {
   @IsString()
   @MinLength(6, { message: 'La contraseña debe tener al menos 6 caracteres' })
   password: string;
+
+  @IsOptional()
+  @IsString()
+  fileNumber?: string;
 
   @IsNumber()
   yearOfAdmission: number;

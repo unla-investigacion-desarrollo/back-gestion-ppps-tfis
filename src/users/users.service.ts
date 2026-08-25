@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   Injectable,
@@ -153,8 +154,40 @@ export class UsersService {
     return baseUser;
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async remove(id: number, requesterId: number) {
+    if (id === requesterId) {
+      throw new BadRequestException(
+        'No puedes eliminar tu propia cuenta de administrador',
+      );
+    }
+    const user = await this.usersRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    if (user.role === Role.ADMIN) {
+      throw new ForbiddenException(
+        'No está permitido eliminar a otro usuario con rol Administrador',
+      );
+    }
+
+    try {
+      if (user.role === Role.STUDENT) {
+        await this.studentsRepository.delete({ id_user: id });
+      } else if (user.role === Role.PROFESSOR) {
+        await this.professorsRepository.delete({ id_user: id });
+      }
+
+      await this.usersRepository.delete(id);
+
+      return {
+        message: 'Usuario eliminado permanentemente',
+      };
+    } catch {
+      throw new BadRequestException(
+        'No se puede eliminar el usuario de forma permanente porque tiene historial o proyectos asociados. Debe cambiar su estado a inactivo.',
+      );
+    }
   }
 
   async createProfessor(
@@ -205,6 +238,7 @@ export class UsersService {
       dni: registerProfessorDto.dni,
       email: registerProfessorDto.email,
       password: registerProfessorDto.password,
+      fileNumber: registerProfessorDto.fileNumber,
     };
 
     const createProfessorDto: CreateProfessorDto = {
@@ -269,6 +303,7 @@ export class UsersService {
       lastName: updateUserDto.lastName,
       dni: updateUserDto.dni,
       email: updateUserDto.email,
+      fileNumber: updateUserDto.fileNumber,
     });
     await this.usersRepository.save(targetUser);
 
@@ -301,5 +336,31 @@ export class UsersService {
     }
 
     return { message: 'Perfil actualizado correctamente' };
+  }
+
+  async updateStatus(id: number, isActive: boolean, requesterId: number) {
+    if (id === requesterId && !isActive) {
+      throw new BadRequestException(
+        'No puedes desactivar tu propia cuenta de administrador',
+      );
+    }
+    const user = await this.usersRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    user.isActive = isActive;
+    await this.usersRepository.save(user);
+
+    const accion = user.isActive ? 'activado' : 'desactivado';
+
+    return {
+      message: 'Usuario ' + accion + ' con éxito',
+      user: {
+        id: user.id,
+        email: user.email,
+        isActive: user.isActive,
+      },
+    };
   }
 }

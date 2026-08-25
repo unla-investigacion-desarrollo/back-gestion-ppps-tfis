@@ -8,13 +8,33 @@ export enum ProjectStatus {
   FINALIZED = 'finalized',
 }
 
+export enum ProjectType {
+  DEVELOPMENT = 'development',
+  RESEARCH = 'research',
+  EXTENSION = 'extension',
+  OTHER = 'other',
+}
+
 @Entity()
 export class Project {
   @PrimaryGeneratedColumn()
   id: number;
 
   @Column()
-  description: string;
+  title: string;
+
+  @Column({ nullable: true })
+  description?: string;
+
+  @Column({
+    type: 'enum',
+    enum: ProjectType,
+    default: ProjectType.DEVELOPMENT,
+  })
+  projectType: ProjectType;
+
+  @Column({ nullable: true })
+  customProjectType?: string;
 
   @Column({
     type: 'enum',

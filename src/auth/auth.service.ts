@@ -39,6 +39,7 @@ export class AuthService {
       dni: registerDto.dni,
       email: registerDto.email,
       password: registerDto.password,
+      fileNumber: registerDto.fileNumber,
     };
 
     const createStudentDto: CreateStudentDto = {
@@ -63,6 +64,12 @@ export class AuthService {
 
     if (!userExists) {
       throw new UnauthorizedException('Credenciales invalidas');
+    }
+
+    if (!userExists.isActive) {
+      throw new UnauthorizedException(
+        'El usuario se encuentra inactivo. Comuníquese con administración.',
+      );
     }
 
     const isPasswordValid = await bcrypt.compare(

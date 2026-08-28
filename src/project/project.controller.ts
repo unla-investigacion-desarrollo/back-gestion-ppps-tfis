@@ -58,6 +58,13 @@ export class ProjectController {
     return this.projectService.getMyActiveProjects(req.user);
   }
 
+  @Get('types')
+  @Roles(Role.ADMIN, Role.PROFESSOR, Role.STUDENT)
+  @UseGuards(AuthGuard, RolesGuard)
+  async findAllProjectTypes() {
+    return await this.projectService.findAllProjectTypes();
+  }
+
   @Get(':id')
   @Roles(Role.ADMIN, Role.PROFESSOR, Role.STUDENT)
   @UseGuards(AuthGuard, RolesGuard)

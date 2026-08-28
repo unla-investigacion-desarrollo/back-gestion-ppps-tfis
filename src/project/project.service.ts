@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { CreateProjectDto } from './dto/create-project.dto';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Project, ProjectStatus, ProjectType } from './entities/project.entity';
+import { Project, ProjectStatus } from './entities/project.entity';
 import { Repository } from 'typeorm';
 import { Role } from 'src/users/entities/user.entity';
 import { JwtPayload } from 'src/auth/types/jwt-payload.interface';
@@ -18,6 +18,7 @@ import { UpdateProjectDto } from './dto/update-project.dto';
 import { ActiveProfessorProject } from './entities/active-professor-project.entity';
 import { Student } from 'src/users/entities/student.entity';
 import { ActiveStudentProject } from './entities/active-student-project.entity';
+import { ProjectType } from './entities/project-type.entity';
 
 @Injectable()
 export class ProjectService {
@@ -28,6 +29,9 @@ export class ProjectService {
     @InjectRepository(Professor)
     private professorRepository: Repository<Professor>,
 
+    @InjectRepository(ProjectType)
+    private projectTypeRepository: Repository<ProjectType>,
+
     @InjectRepository(ActiveProfessorProject)
     private activeProfessorProjectRepository: Repository<ActiveProfessorProject>,
 
@@ -37,6 +41,27 @@ export class ProjectService {
     @InjectRepository(ActiveStudentProject)
     private activeStudentProjectRepository: Repository<ActiveStudentProject>,
   ) {}
+
+  async onModuleInit() {
+    const defaultTypes = ['Development', 'Research', 'Extension', 'Other'];
+
+    for (const name of defaultTypes) {
+      const exists = await this.projectTypeRepository.findOne({
+        where: { name },
+      });
+      if (!exists) {
+        await this.projectTypeRepository.save(
+          this.projectTypeRepository.create({ name }),
+        );
+      }
+    }
+  }
+
+  async findAllProjectTypes() {
+    return await this.projectTypeRepository.find({
+      order: { id: 'ASC' },
+    });
+  }
 
   async create(createProjectDto: CreateProjectDto, user: JwtPayload) {
     if (user.role === Role.PROFESSOR) {
@@ -50,11 +75,49 @@ export class ProjectService {
         throw new ForbiddenException('Los tutores no pueden crear proyectos');
       }
     }
-    if (createProjectDto.projectType !== ProjectType.OTHER) {
-      createProjectDto.customProjectType = null;
+
+    if (createProjectDto.customProjectType) {
+      const name = createProjectDto.customProjectType.trim();
+
+      let projectType = await this.projectTypeRepository.findOne({
+        where: { name },
+      });
+
+      if (!projectType) {
+        projectType = await this.projectTypeRepository.save(
+          this.projectTypeRepository.create({ name }),
+        );
+      }
+
+      const project = this.projectsRepository.create({
+        title: createProjectDto.title,
+        description: createProjectDto.description,
+        projectType,
+      });
+
+      return await this.projectsRepository.save(project);
     }
-    const project = this.projectsRepository.create(createProjectDto);
-    return await this.projectsRepository.save(project);
+
+    // 2. Si eligió uno de la lista por ID:
+    if (createProjectDto.projectTypeId) {
+      const projectType = await this.projectTypeRepository.findOne({
+        where: { id: +createProjectDto.projectTypeId },
+      });
+
+      if (!projectType) {
+        throw new NotFoundException('Tipo de proyecto no encontrado');
+      }
+
+      const project = this.projectsRepository.create({
+        title: createProjectDto.title,
+        description: createProjectDto.description,
+        projectType,
+      });
+
+      return await this.projectsRepository.save(project);
+    }
+
+    throw new NotFoundException('Debe indicar un tipo de proyecto válido');
   }
 
   async findAll(user: JwtPayload) {
@@ -89,7 +152,6 @@ export class ProjectService {
         title: project.title,
         description: project.description,
         projectType: project.projectType,
-        customProjectType: project.customProjectType,
       }));
     }
 
@@ -99,7 +161,6 @@ export class ProjectService {
         title: project.title,
         description: project.description,
         projectType: project.projectType,
-        customProjectType: project.customProjectType,
       }));
     }
 
@@ -180,6 +241,17 @@ export class ProjectService {
         );
       }
     }
+
+    if (updateProjectDto.projectTypeId) {
+      const projectType = await this.projectTypeRepository.findOne({
+        where: { id: +updateProjectDto.projectTypeId },
+      });
+      if (!projectType) {
+        throw new NotFoundException('Tipo de proyecto no encontrado');
+      }
+      project.projectType = projectType;
+    }
+
     Object.assign(project, updateProjectDto);
     await this.projectsRepository.save(project);
 

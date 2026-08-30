@@ -8,6 +8,7 @@ import {
 } from 'typeorm';
 import { ActiveProfessorProject } from './active-professor-project.entity';
 import { ActiveStudentProject } from './active-student-project.entity';
+import { StudentWork } from 'src/student-work/entities/student-work.entity';
 import { ProjectType } from './project-type.entity';
 
 export enum ProjectStatus {
@@ -47,4 +48,7 @@ export class Project {
     cascade: true,
   })
   activeStudents: ActiveStudentProject[];
+
+  @OneToMany(() => StudentWork, (work) => work.project)
+  studentWorks: StudentWork[];
 }

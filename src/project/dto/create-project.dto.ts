@@ -1,12 +1,18 @@
-import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
-import { ProjectStatus } from '../entities/project.entity';
+import { IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateProjectDto {
   @IsString()
-  @IsNotEmpty({ message: 'La descripción no puede ser un campo vacio' })
-  description: string;
+  @IsNotEmpty({ message: 'El título es obligatorio' })
+  title: string;
 
-  @IsEnum(ProjectStatus)
+  @IsString()
   @IsOptional()
-  status?: ProjectStatus = ProjectStatus.PENDING;
+  description?: string;
+
+  @IsOptional()
+  projectTypeId: number;
+
+  @IsOptional()
+  @IsString()
+  customProjectType?: string;
 }

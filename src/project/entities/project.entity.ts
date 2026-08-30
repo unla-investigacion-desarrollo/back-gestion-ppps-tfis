@@ -1,7 +1,15 @@
-import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { ActiveProfessorProject } from './active-professor-project.entity';
 import { ActiveStudentProject } from './active-student-project.entity';
 import { StudentWork } from 'src/student-work/entities/student-work.entity';
+import { ProjectType } from './project-type.entity';
 
 export enum ProjectStatus {
   PENDING = 'pending',
@@ -15,7 +23,14 @@ export class Project {
   id: number;
 
   @Column()
-  description: string;
+  title: string;
+
+  @Column({ nullable: true })
+  description?: string;
+
+  @ManyToOne(() => ProjectType, (tp) => tp.projects, { eager: true })
+  @JoinColumn({ name: 'project_type_id' })
+  projectType: ProjectType;
 
   @Column({
     type: 'enum',

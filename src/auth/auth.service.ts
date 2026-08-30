@@ -39,6 +39,7 @@ export class AuthService {
       dni: registerDto.dni,
       email: registerDto.email,
       password: registerDto.password,
+      fileNumber: registerDto.fileNumber,
     };
 
     const createStudentDto: CreateStudentDto = {
@@ -65,6 +66,12 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales invalidas');
     }
 
+    if (!userExists.isActive) {
+      throw new UnauthorizedException(
+        'El usuario se encuentra inactivo. Comuníquese con administración.',
+      );
+    }
+
     const isPasswordValid = await bcrypt.compare(
       loginDto.password,
       userExists.password,
@@ -74,17 +81,21 @@ export class AuthService {
       throw new UnauthorizedException('Credenciales invalidas');
     }
 
+    return this.buildTokenResponse(userExists, loginDto.email);
+  }
+
+  private async buildTokenResponse(user: any, email: string) {
     const payload = {
-      id: userExists.id,
-      email: userExists.email,
-      role: userExists.role,
+      id: user.id,
+      email: user.email,
+      role: user.role,
     };
 
     const token = await this.jwtService.signAsync(payload);
 
     return {
       token,
-      email: loginDto.email,
+      email,
     };
   }
 }

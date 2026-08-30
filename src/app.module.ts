@@ -5,6 +5,7 @@ import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { UsersModule } from './users/users.module';
 import { AuthModule } from './auth/auth.module';
 import { ProjectModule } from './project/project.module';
+import { StudentWorkModule } from './student-work/student-work.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { ProjectModule } from './project/project.module';
     UsersModule,
     AuthModule,
     ProjectModule,
+    StudentWorkModule,
   ],
   controllers: [],
   providers: [],

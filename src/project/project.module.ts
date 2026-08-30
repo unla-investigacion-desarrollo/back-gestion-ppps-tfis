@@ -15,6 +15,7 @@ import { ActiveStudentProject } from './entities/active-student-project.entity';
 import { AuthModule } from 'src/auth/auth.module';
 import { Professor } from 'src/users/entities/professor.entity';
 import { Student } from 'src/users/entities/student.entity';
+import { StudentWork } from 'src/student-work/entities/student-work.entity';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { Student } from 'src/users/entities/student.entity';
       ActiveStudentProject,
       Professor,
       Student,
+      StudentWork,
     ]),
     AuthModule,
   ],

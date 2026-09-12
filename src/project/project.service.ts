@@ -3,6 +3,7 @@
  * para agregar funcionalidades especificas
  */
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -43,7 +44,7 @@ export class ProjectService {
   ) {}
 
   async onModuleInit() {
-    const defaultTypes = ['Development', 'Research', 'Extension', 'Other'];
+    const defaultTypes = ['Desarrollo', 'Investigación', 'Extensión', 'Otro'];
 
     for (const name of defaultTypes) {
       const exists = await this.projectTypeRepository.findOne({
@@ -324,9 +325,9 @@ export class ProjectService {
       where: { student: { id_user: user.id }, active: true },
     });
 
-    if (activeCount >= 2) {
+    if (activeCount >= 1) {
       throw new ForbiddenException(
-        'Ya estás participando en el maximo de 2 proyectos activos',
+        'Ya estás participando en un proyectos activos',
       );
     }
 
@@ -370,6 +371,19 @@ export class ProjectService {
           'Solo docentes evaluadores pueden aprobar solicitudes',
         );
       }
+    }
+
+    const alreadyActiveCount = await this.activeStudentProjectRepository.count({
+      where: {
+        student: { id_user: studentRequestId },
+        active: true,
+      },
+    });
+
+    if (alreadyActiveCount >= 1) {
+      throw new BadRequestException(
+        'El estudiante ya se encuentra activo en otro proyecto.',
+      );
     }
 
     const request = await this.activeStudentProjectRepository.findOne({

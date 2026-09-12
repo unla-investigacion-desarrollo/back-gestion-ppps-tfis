@@ -74,7 +74,16 @@ export class UsersService {
 
   // Referencia: https://bluuweb.dev/nestjs/auth-jwt.html
   async findOneByEmail(email: string) {
-    return await this.usersRepository.findOneBy({ email });
+    return await this.usersRepository.findOne({
+      where: { email },
+      select: {
+        id: true,
+        email: true,
+        password: true,
+        role: true,
+        isActive: true,
+      },
+    });
   }
 
   async findOneByDNI(dni: string) {

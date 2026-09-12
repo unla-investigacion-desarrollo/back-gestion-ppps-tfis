@@ -25,7 +25,7 @@ export class Project {
   @Column()
   title: string;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', length: 2000, nullable: true })
   description?: string;
 
   @ManyToOne(() => ProjectType, (tp) => tp.projects, { eager: true })

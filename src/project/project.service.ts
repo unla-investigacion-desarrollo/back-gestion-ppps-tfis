@@ -544,7 +544,6 @@ export class ProjectService {
     if (user.role === Role.STUDENT) {
       return await this.activeStudentProjectRepository.find({
         where: { student: { id_user: user.id }, active: true },
-        relations: ['project'],
       });
     }
 
@@ -556,17 +555,19 @@ export class ProjectService {
       if (!professor) {
         throw new NotFoundException('Profesor no encontrado');
       }
-
-      if (!professor.isTutor) {
-        throw new ForbiddenException(
-          'Solo los docentes tutores pueden ver sus proyectos activos',
-        );
-      }
-
-      return await this.activeProfessorProjectRepository.find({
-        where: { professor: { id_user: user.id }, active: true },
-        relations: ['project'],
-      });
     }
+    return await this.activeProfessorProjectRepository.find({
+      where: {
+        professor: { id_user: user.id },
+        active: true,
+      },
+      relations: [
+        'project',
+        'project.projectType',
+        'project.activeStudents',
+        'project.activeStudents.student',
+        'project.activeStudents.student.user',
+      ],
+    });
   }
 }

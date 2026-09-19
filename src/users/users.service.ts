@@ -17,6 +17,8 @@ import { CreateProfessorDto } from './dto/create-professor.dto';
 import { RegisterProfessorDto } from './dto/register-professor.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtPayload } from 'src/auth/types/jwt-payload.interface';
+import { MailService } from 'src/mail/mail.service';
+import { ChangePasswordDto } from 'src/auth/dto/change-password.dto';
 
 @Injectable()
 export class UsersService {
@@ -29,6 +31,8 @@ export class UsersService {
 
     @InjectRepository(Professor)
     private professorsRepository: Repository<Professor>,
+
+    private readonly mailService: MailService,
 
     private dataSource: DataSource,
   ) {}
@@ -78,6 +82,8 @@ export class UsersService {
       where: { email },
       select: {
         id: true,
+        firstName: true,
+        lastName: true,
         email: true,
         password: true,
         role: true,
@@ -260,6 +266,11 @@ export class UsersService {
       createProfessorDto,
     );
 
+    await this.mailService.sendWelcomeEmail(
+      registerProfessorDto.email,
+      registerProfessorDto.firstName,
+    );
+
     return {
       message: 'Profesor creado exitosamente',
       professorId: professor.id_user,
@@ -278,6 +289,11 @@ export class UsersService {
     }
 
     const admin = await this.createUserAdmin(createUserDto);
+
+    await this.mailService.sendWelcomeEmail(
+      createUserDto.email,
+      createUserDto.firstName,
+    );
 
     return {
       message: 'Admin creado exitosamente',
@@ -371,5 +387,61 @@ export class UsersService {
         isActive: user.isActive,
       },
     };
+  }
+
+  async updatePassword(id: number, newHashedPassword: string) {
+    const user = await this.usersRepository.findOne({ where: { id } });
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    user.password = newHashedPassword;
+    await this.usersRepository.save(user);
+
+    return { message: 'Contraseña actualizada con éxito' };
+  }
+
+  async changePassword(
+    userId: number,
+    changePasswordDto: ChangePasswordDto,
+    requesterId: number,
+  ) {
+    if (userId !== requesterId) {
+      throw new ForbiddenException(
+        'No tienes permiso para modificar la contraseña de otro usuario',
+      );
+    }
+
+    // Traemos explícitamente el password porque suele estar oculto o excluido en queries comunes
+    const user = await this.usersRepository.findOne({
+      where: { id: userId },
+      select: {
+        id: true,
+        password: true,
+      },
+    });
+
+    if (!user) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    const isPasswordValid = await bcrypt.compare(
+      changePasswordDto.currentPassword,
+      user.password,
+    );
+
+    if (!isPasswordValid) {
+      throw new BadRequestException('La contraseña actual es incorrecta');
+    }
+
+    const hashedNewPassword = await bcrypt.hash(
+      changePasswordDto.newPassword,
+      12,
+    );
+
+    user.password = hashedNewPassword;
+    await this.usersRepository.save(user);
+
+    return { message: 'Contraseña actualizada con éxito' };
   }
 }

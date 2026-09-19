@@ -23,6 +23,7 @@ import { JwtPayload } from 'src/auth/types/jwt-payload.interface';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { UpdateUserStatusDto } from './dto/update-user-status.dto';
+import { ChangePasswordDto } from 'src/auth/dto/change-password.dto';
 
 @Controller('users')
 export class UsersController {
@@ -87,6 +88,22 @@ export class UsersController {
     return this.usersService.updateStatus(
       +id,
       updateUserStatusDto.isActive,
+      requesterId,
+    );
+  }
+
+  @Patch(':id/change-password')
+  @Roles(Role.ADMIN, Role.STUDENT, Role.PROFESSOR)
+  @UseGuards(AuthGuard, RolesGuard)
+  async changePassword(
+    @Param('id') id: string,
+    @Body() changePasswordDto: ChangePasswordDto,
+    @Request() req: Request & { user: JwtPayload },
+  ) {
+    const requesterId = req.user.id;
+    return this.usersService.changePassword(
+      +id,
+      changePasswordDto,
       requesterId,
     );
   }

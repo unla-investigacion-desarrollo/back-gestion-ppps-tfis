@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { ProjectModule } from './project/project.module';
 import { StudentWorkModule } from './student-work/student-work.module';
 import { PppModule } from './ppp/ppp.module';
+import { MailModule } from './mail/mail.module';
 
 @Module({
   imports: [
@@ -33,6 +34,7 @@ import { PppModule } from './ppp/ppp.module';
     ProjectModule,
     StudentWorkModule,
     PppModule,
+    MailModule,
   ],
   controllers: [],
   providers: [],

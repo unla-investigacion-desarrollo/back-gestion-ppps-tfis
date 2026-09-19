@@ -6,9 +6,14 @@ import { User } from './entities/user.entity';
 import { Student } from './entities/student.entity';
 import { Professor } from './entities/professor.entity';
 import { AuthModule } from 'src/auth/auth.module';
+import { MailModule } from 'src/mail/mail.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([User, Student, Professor]), AuthModule],
+  imports: [
+    TypeOrmModule.forFeature([User, Student, Professor]),
+    AuthModule,
+    MailModule,
+  ],
   controllers: [UsersController],
   providers: [UsersService],
   exports: [UsersService],

@@ -62,11 +62,13 @@ $ npm run test:cov
 This project uses **MySQL 8** inside a Docker container.
 
 ### Start MySQL
+
 ```bash
 docker compose up -d
 ```
 
-### Start MySQL
+### Stop MySQL
+
 ```bash
 docker compose down
 ```
@@ -76,11 +78,25 @@ docker compose down
 You need a `.env` file in the root of the project with the following variables:
 
 ```env
+# Database
 MYSQL_ROOT_PASSWORD=<root_password>
 MYSQL_DATABASE=<database_name>
 MYSQL_USER=<db_user>
 MYSQL_PASSWORD=<db_password>
 MYSQL_PORT=3307
+
+# Authentication
+JWT_SECRET=<tu_secreto_jwt>
+JWT_EXPIRES_IN=1h
+
+# Mail Service
+MAIL_HOST=smtp.gmail.com
+MAIL_USER=<tu_email_de_prueba>
+MAIL_PASSWORD=<tu_app_password>
+MAIL_FROM=noreply@example.com
+
+# Frontend
+FRONTEND_URL=http://localhost:5173
 ```
 
 ## Example connection

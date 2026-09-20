@@ -584,4 +584,71 @@ export class ProjectService {
       ],
     });
   }
+
+  async getPendingRequests(user: JwtPayload) {
+    if (user.role === Role.PROFESSOR) {
+      const professor = await this.professorRepository.findOne({
+        where: { id_user: user.id },
+      });
+
+      if (!professor) {
+        throw new NotFoundException('Profesor no encontrado');
+      }
+
+      if (professor.isTutor) {
+        throw new ForbiddenException(
+          'Solo los evaluadores pueden revisar solicitudes pendientes',
+        );
+      }
+    }
+
+    const pendingProfessors = await this.activeProfessorProjectRepository.find({
+      where: { active: false },
+      relations: [
+        'project',
+        'project.projectType',
+        'professor',
+        'professor.user',
+      ],
+    });
+
+    const pendingStudents = await this.activeStudentProjectRepository.find({
+      where: { active: false },
+      relations: ['project', 'project.projectType', 'student', 'student.user'],
+    });
+
+    return {
+      pendingProfessors: pendingProfessors.map((req) => ({
+        requestId: req.id,
+        project: {
+          id: req.project.id,
+          title: req.project.title,
+          type: req.project.projectType.name,
+        },
+        applicant: {
+          id: req.professor.id_user,
+          firstName: req.professor.user.firstName,
+          lastName: req.professor.user.lastName,
+          email: req.professor.user.email,
+          specialization: req.professor.specialization,
+        },
+      })),
+
+      pendingStudents: pendingStudents.map((req) => ({
+        requestId: req.id,
+        project: {
+          id: req.project.id,
+          title: req.project.title,
+          type: req.project.projectType.name,
+        },
+        applicant: {
+          id: req.student.id_user,
+          firstName: req.student.user.firstName,
+          lastName: req.student.user.lastName,
+          email: req.student.user.email,
+          yearOfAdmission: req.student.yearOfAdmission,
+        },
+      })),
+    };
+  }
 }

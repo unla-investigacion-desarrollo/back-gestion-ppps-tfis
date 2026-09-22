@@ -4,6 +4,7 @@ import {
   JoinColumn,
   ManyToOne,
   OneToMany,
+  OneToOne,
   PrimaryGeneratedColumn,
 } from 'typeorm';
 import { ActiveProfessorProject } from './active-professor-project.entity';
@@ -49,6 +50,6 @@ export class Project {
   })
   activeStudents: ActiveStudentProject[];
 
-  @OneToMany(() => StudentWork, (work) => work.project)
-  studentWorks: StudentWork[];
+  @OneToOne(() => StudentWork, (work) => work.project)
+  studentWork: StudentWork;
 }

@@ -556,9 +556,54 @@ export class ProjectService {
 
   async getMyActiveProjects(user: JwtPayload) {
     if (user.role === Role.STUDENT) {
-      return await this.activeStudentProjectRepository.find({
+      const studentProjects = await this.activeStudentProjectRepository.find({
         where: { student: { id_user: user.id }, active: true },
+        relations: [
+          'project',
+          'project.projectType',
+          'project.studentWork',
+          'project.activeProfessors',
+          'project.activeProfessors.professor',
+          'project.activeProfessors.professor.user',
+          'project.activeStudents',
+          'project.activeStudents.student',
+          'project.activeStudents.student.user',
+        ],
       });
+
+      return studentProjects.map((rel) => ({
+        ...rel,
+        project: {
+          id: rel.project.id,
+          title: rel.project.title,
+          description: rel.project.description,
+          status: rel.project.status,
+          projectType: rel.project.projectType?.name,
+          lastTutoring: rel.project.studentWork?.lastTutoredAt || null,
+          activeProfessors: rel.project.activeProfessors?.map((ap) => ({
+            id: ap.id,
+            professor: {
+              id_user: ap.professor.id_user,
+              user: {
+                firstName: ap.professor.user.firstName,
+                lastName: ap.professor.user.lastName,
+                email: ap.professor.user.email,
+              },
+            },
+          })),
+          activeStudents: rel.project.activeStudents?.map((as) => ({
+            id: as.id,
+            student: {
+              id_user: as.student.id_user,
+              user: {
+                firstName: as.student.user.firstName,
+                lastName: as.student.user.lastName,
+                email: as.student.user.email,
+              },
+            },
+          })),
+        },
+      }));
     }
 
     if (user.role === Role.PROFESSOR) {
@@ -569,8 +614,15 @@ export class ProjectService {
       if (!professor) {
         throw new NotFoundException('Profesor no encontrado');
       }
+
+      if (!professor.isTutor) {
+        throw new ForbiddenException(
+          'Los evaluadores no poseen proyectos asignados. Deben utilizar el endpoint general de proyectos.',
+        );
+      }
     }
-    return await this.activeProfessorProjectRepository.find({
+
+    const professorProjects = await this.activeProfessorProjectRepository.find({
       where: {
         professor: { id_user: user.id },
         active: true,
@@ -578,11 +630,49 @@ export class ProjectService {
       relations: [
         'project',
         'project.projectType',
+        'project.studentWork',
         'project.activeStudents',
         'project.activeStudents.student',
         'project.activeStudents.student.user',
+        'project.activeProfessors',
+        'project.activeProfessors.professor',
+        'project.activeProfessors.professor.user',
       ],
     });
+
+    return professorProjects.map((rel) => ({
+      ...rel,
+      project: {
+        id: rel.project.id,
+        title: rel.project.title,
+        description: rel.project.description,
+        status: rel.project.status,
+        projectType: rel.project.projectType?.name,
+        lastTutoring: rel.project.studentWork?.lastTutoredAt || null,
+        activeProfessors: rel.project.activeProfessors?.map((ap) => ({
+          id: ap.id,
+          professor: {
+            id_user: ap.professor.id_user,
+            user: {
+              firstName: ap.professor.user.firstName,
+              lastName: ap.professor.user.lastName,
+              email: ap.professor.user.email,
+            },
+          },
+        })),
+        activeStudents: rel.project.activeStudents?.map((as) => ({
+          id: as.id,
+          student: {
+            id_user: as.student.id_user,
+            user: {
+              firstName: as.student.user.firstName,
+              lastName: as.student.user.lastName,
+              email: as.student.user.email,
+            },
+          },
+        })),
+      },
+    }));
   }
 
   async getPendingRequests(user: JwtPayload) {

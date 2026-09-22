@@ -4,6 +4,7 @@ import {
   Entity,
   JoinColumn,
   ManyToOne,
+  OneToOne,
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
@@ -39,7 +40,9 @@ export class StudentWork {
   @Column({ type: 'int', nullable: true })
   qualification: number | null;
 
-  @ManyToOne(() => Project, { onDelete: 'CASCADE' })
+  @OneToOne(() => Project, (project) => project.studentWork, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'project_id' })
   project: Project;
 

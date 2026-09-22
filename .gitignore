@@ -4,3 +4,4 @@ mysql
 
 .env
 
+dist/

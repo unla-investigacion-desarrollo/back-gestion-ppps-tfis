@@ -139,6 +139,13 @@ export class PppController {
     return await this.pppService.findAllPpp(req.user);
   }
 
+  @Get('my-applications')
+  @Roles(Role.STUDENT)
+  @UseGuards(AuthGuard, RolesGuard)
+  async findMyApplications(@Request() req: Request & { user: JwtPayload }) {
+    return await this.pppService.findMyApplications(req.user);
+  }
+
   @Get(':id')
   @Roles(Role.ADMIN, Role.PROFESSOR, Role.STUDENT)
   @UseGuards(AuthGuard, RolesGuard)

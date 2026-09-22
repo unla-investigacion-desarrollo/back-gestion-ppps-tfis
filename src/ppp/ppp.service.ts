@@ -673,4 +673,41 @@ export class PppService {
       isOpen: proposal.isOpen,
     };
   }
+
+  async findMyApplications(user: JwtPayload) {
+    const applications = await this.pppRepository.find({
+      where: {
+        student: { id_user: user.id },
+        isActive: true,
+      },
+      relations: ['proposal'],
+    });
+
+    return applications.map((ppp) => {
+      const isAcceptedInInternal =
+        ppp.type === PppType.INTERNAL &&
+        ppp.status !== PppStatus.PENDING_APPLICATION &&
+        ppp.status !== PppStatus.APPLICATION_REJECTED;
+
+      return {
+        id: ppp.id,
+        type: ppp.type,
+        status: ppp.status,
+        isSiuLoaded: ppp.isSiuLoaded,
+        previousKnowledge: ppp.previousKnowledge,
+        createdAt: ppp.createdAt,
+        updatedAt: ppp.updatedAt,
+        proposal: ppp.proposal
+          ? {
+              id: ppp.proposal.id,
+              title: ppp.proposal.title,
+              description: ppp.proposal.description,
+              driveFolderUrl: isAcceptedInInternal
+                ? ppp.proposal.driveFolderUrl
+                : null,
+            }
+          : null,
+      };
+    });
+  }
 }

@@ -23,6 +23,10 @@ export class RolesGuard implements CanActivate {
     const { user } = context
       .switchToHttp()
       .getRequest<{ user: { role: Role } }>();
+
+    if (user.role === Role.SUPERADMIN && requiredRoles.includes(Role.ADMIN)) {
+      return true;
+    }
     if (!requiredRoles.includes(user.role)) {
       throw new ForbiddenException(
         'No tienes permisos suficientes para acceder a este recurso',

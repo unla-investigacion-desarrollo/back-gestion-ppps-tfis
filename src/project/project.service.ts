@@ -99,7 +99,6 @@ export class ProjectService {
       return await this.projectsRepository.save(project);
     }
 
-    // 2. Si eligió uno de la lista por ID:
     if (createProjectDto.projectTypeId) {
       const projectType = await this.projectTypeRepository.findOne({
         where: { id: +createProjectDto.projectTypeId },
@@ -196,7 +195,6 @@ export class ProjectService {
         throw new ForbiddenException('Profesor no encontrado');
       }
 
-      // Evaluador ve todo
       if (!professor.isTutor) {
         return project;
       }
@@ -740,5 +738,100 @@ export class ProjectService {
         },
       })),
     };
+  }
+
+  async getProjectsOverview(user: JwtPayload) {
+    let projects: Project[] = [];
+
+    const baseRelations = [
+      'projectType',
+      'activeStudents',
+      'activeStudents.student',
+      'activeStudents.student.user',
+      'activeProfessors',
+      'activeProfessors.professor',
+      'activeProfessors.professor.user',
+      'studentWork',
+      'studentWork.lastReviewedBy',
+      'studentWork.lastReviewedBy.user',
+      'studentWork.lastTutoredBy',
+      'studentWork.lastTutoredBy.user',
+    ];
+
+    let isEvaluator = false;
+
+    if (user.role === Role.PROFESSOR) {
+      const professor = await this.professorRepository.findOne({
+        where: { id_user: user.id },
+      });
+      isEvaluator = professor ? !professor.isTutor : false;
+    }
+
+    if (user.role === Role.ADMIN || isEvaluator) {
+      projects = await this.projectsRepository.find({
+        relations: baseRelations,
+      });
+    } else if (user.role === Role.STUDENT) {
+      const activeRecords = await this.activeStudentProjectRepository.find({
+        where: { student: { id_user: user.id }, active: true },
+        relations: ['project', ...baseRelations.map((rel) => `project.${rel}`)],
+      });
+      projects = activeRecords.map((record) => record.project);
+    } else if (user.role === Role.PROFESSOR && !isEvaluator) {
+      const activeRecords = await this.activeProfessorProjectRepository.find({
+        where: { professor: { id_user: user.id }, active: true },
+        relations: ['project', ...baseRelations.map((rel) => `project.${rel}`)],
+      });
+      projects = activeRecords.map((record) => record.project);
+    }
+
+    return projects.map((project) => ({
+      id: project.id,
+      title: project.title,
+      category: project.projectType?.name || null,
+      status: project.status,
+
+      students:
+        project.activeStudents
+          ?.filter((asp) => asp.active)
+          .map((asp) => ({
+            id: asp.student.id_user,
+            firstName: asp.student.user?.firstName,
+            lastName: asp.student.user?.lastName,
+          })) || [],
+
+      professors:
+        project.activeProfessors
+          ?.filter((app) => app.active)
+          .map((app) => ({
+            id: app.professor.id_user,
+            firstName: app.professor.user?.firstName,
+            lastName: app.professor.user?.lastName,
+          })) || [],
+
+      studentWork: project.studentWork
+        ? {
+            id: project.studentWork.id,
+            status: project.studentWork.status,
+            lastReviewedAt: project.studentWork.lastReviewedAt,
+            lastReviewedBy: project.studentWork.lastReviewedBy
+              ? {
+                  id: project.studentWork.lastReviewedBy.id_user,
+                  firstName: project.studentWork.lastReviewedBy.user?.firstName,
+                  lastName: project.studentWork.lastReviewedBy.user?.lastName,
+                }
+              : null,
+            tutoringRequested: project.studentWork.tutoringRequested,
+            lastTutoredAt: project.studentWork.lastTutoredAt,
+            lastTutoredBy: project.studentWork.lastTutoredBy
+              ? {
+                  id: project.studentWork.lastTutoredBy.id_user,
+                  firstName: project.studentWork.lastTutoredBy.user?.firstName,
+                  lastName: project.studentWork.lastTutoredBy.user?.lastName,
+                }
+              : null,
+          }
+        : null,
+    }));
   }
 }

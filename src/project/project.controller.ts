@@ -72,6 +72,13 @@ export class ProjectController {
     return this.projectService.getPendingRequests(req.user);
   }
 
+  @Get('overview')
+  @Roles(Role.ADMIN, Role.PROFESSOR, Role.STUDENT)
+  @UseGuards(AuthGuard, RolesGuard)
+  async getProjectsOverview(@Request() req: Request & { user: JwtPayload }) {
+    return await this.projectService.getProjectsOverview(req.user);
+  }
+
   @Get(':id')
   @Roles(Role.ADMIN, Role.PROFESSOR, Role.STUDENT)
   @UseGuards(AuthGuard, RolesGuard)

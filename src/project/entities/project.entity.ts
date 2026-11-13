@@ -11,11 +11,13 @@ import { ActiveProfessorProject } from './active-professor-project.entity';
 import { ActiveStudentProject } from './active-student-project.entity';
 import { StudentWork } from 'src/student-work/entities/student-work.entity';
 import { ProjectType } from './project-type.entity';
+import { CreateDateColumn } from 'typeorm';
 
 export enum ProjectStatus {
   PENDING = 'pending',
   IN_PROGRESS = 'in_progress',
   FINALIZED = 'finalized',
+  CANCELLED = 'cancelled',
 }
 
 @Entity()
@@ -52,4 +54,7 @@ export class Project {
 
   @OneToOne(() => StudentWork, (work) => work.project)
   studentWork: StudentWork;
+
+  @CreateDateColumn()
+  createdAt: Date;
 }

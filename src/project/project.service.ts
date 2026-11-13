@@ -257,8 +257,38 @@ export class ProjectService {
     return { message: 'Proyecto actualizado correctamente', project };
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} user`;
+  async remove(id: number) {
+    const project = await this.projectsRepository.findOne({ where: { id } });
+    if (!project) {
+      throw new NotFoundException('Proyecto no encontrado');
+    }
+
+    const hasStudents = await this.activeStudentProjectRepository.findOne({
+      where: { project: { id } },
+    });
+    if (hasStudents) {
+      throw new BadRequestException(
+        'No se puede eliminar el proyecto porque ya tiene estudiantes vinculados.',
+      );
+    }
+
+    const hasProfessors = await this.activeProfessorProjectRepository.findOne({
+      where: { project: { id } },
+    });
+    if (hasProfessors) {
+      throw new BadRequestException(
+        'No se puede eliminar el proyecto porque ya tiene docentes vinculados.',
+      );
+    }
+
+    try {
+      await this.projectsRepository.delete(id);
+      return { message: 'Proyecto eliminado exitosamente' };
+    } catch {
+      throw new BadRequestException(
+        'No se puede eliminar el proyecto porque posee entregas o dependencias activas.',
+      );
+    }
   }
 
   async requestJoinAsProfessor(id: number, user: JwtPayload) {
@@ -833,5 +863,47 @@ export class ProjectService {
           }
         : null,
     }));
+  }
+
+  async changeStatus(id: number) {
+    const project = await this.projectsRepository.findOne({
+      where: { id },
+      relations: ['activeStudents', 'activeProfessors'],
+    });
+
+    if (!project) throw new NotFoundException('Proyecto no encontrado');
+
+    if (project.status === ProjectStatus.CANCELLED) {
+      project.status = ProjectStatus.PENDING;
+      await this.projectsRepository.save(project);
+      return { message: 'Proyecto restaurado', status: project.status };
+    }
+
+    project.status = ProjectStatus.CANCELLED;
+
+    if (project.activeStudents && project.activeStudents.length > 0) {
+      for (const studentRel of project.activeStudents) {
+        if (studentRel.active) {
+          studentRel.active = false;
+          await this.activeStudentProjectRepository.save(studentRel);
+        }
+      }
+    }
+
+    if (project.activeProfessors && project.activeProfessors.length > 0) {
+      for (const profRel of project.activeProfessors) {
+        if (profRel.active) {
+          profRel.active = false;
+          await this.activeProfessorProjectRepository.save(profRel);
+        }
+      }
+    }
+
+    await this.projectsRepository.save(project);
+
+    return {
+      message: 'Proyecto dado de baja y usuarios liberados exitosamente',
+      status: project.status,
+    };
   }
 }

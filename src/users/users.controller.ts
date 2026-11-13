@@ -55,10 +55,9 @@ export class UsersController {
   remove(
     @Param('id') id: string,
     @Request()
-    req: Request & { user: { id: number; email: string; role: string } },
+    req: Request & { user: JwtPayload },
   ) {
-    const requesterId = req.user.id;
-    return this.usersService.remove(+id, requesterId);
+    return this.usersService.remove(+id, req.user);
   }
 
   @Post('register-professor')
@@ -82,13 +81,12 @@ export class UsersController {
     @Param('id') id: string,
     @Body() updateUserStatusDto: UpdateUserStatusDto,
     @Request()
-    req: Request & { user: { id: number; email: string; role: string } },
+    req: Request & { user: JwtPayload },
   ) {
-    const requesterId = req.user.id;
     return this.usersService.updateStatus(
       +id,
       updateUserStatusDto.isActive,
-      requesterId,
+      req.user,
     );
   }
 

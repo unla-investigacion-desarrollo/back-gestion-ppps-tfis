@@ -97,6 +97,10 @@ MAIL_FROM=noreply@example.com
 
 # Frontend
 FRONTEND_URL=http://localhost:5173
+
+# Credenciales del Superadmin (Database Seeding)
+SUPERADMIN_EMAIL=<email_del_superadmin>
+SUPERADMIN_PASSWORD=<password_del_superadmin>
 ```
 
 ## Example connection

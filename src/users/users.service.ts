@@ -37,6 +37,32 @@ export class UsersService {
     private dataSource: DataSource,
   ) {}
 
+  async onApplicationBootstrap() {
+    const superAdminExists = await this.usersRepository.findOne({
+      where: { role: Role.SUPERADMIN },
+    });
+
+    if (!superAdminExists) {
+      const defaultEmail = process.env.SUPERADMIN_EMAIL;
+      const defaultPassword = process.env.SUPERADMIN_PASSWORD;
+
+      const hashedPassword = await bcrypt.hash(defaultPassword, 12);
+
+      const rootUser = this.usersRepository.create({
+        firstName: 'Sistemas',
+        lastName: 'UNLa',
+        email: defaultEmail,
+        dni: '00000000',
+        password: hashedPassword,
+        role: Role.SUPERADMIN,
+        isActive: true,
+      });
+
+      await this.usersRepository.save(rootUser);
+      console.log('Superadmin por defecto creado con éxito.');
+    }
+  }
+
   async createUserAdmin(createUserDto: CreateUserDto) {
     return this.dataSource.transaction(async (manager) => {
       const userRepo = manager.getRepository(User);
@@ -169,20 +195,18 @@ export class UsersService {
     return baseUser;
   }
 
-  async remove(id: number, requesterId: number) {
-    if (id === requesterId) {
-      throw new BadRequestException(
-        'No puedes eliminar tu propia cuenta de administrador',
-      );
+  async remove(id: number, requester: JwtPayload) {
+    if (id === requester.id) {
+      throw new BadRequestException('No puedes eliminar tu propia cuenta');
     }
     const user = await this.usersRepository.findOne({ where: { id } });
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    if (user.role === Role.ADMIN) {
+    if (user.role === Role.ADMIN && requester.role !== Role.SUPERADMIN) {
       throw new ForbiddenException(
-        'No está permitido eliminar a otro usuario con rol Administrador',
+        'No está permitido eliminar a otro usuario con rol Administrador. Se requiere rol Superadmin.',
       );
     }
 
@@ -363,8 +387,8 @@ export class UsersService {
     return { message: 'Perfil actualizado correctamente' };
   }
 
-  async updateStatus(id: number, isActive: boolean, requesterId: number) {
-    if (id === requesterId && !isActive) {
+  async updateStatus(id: number, isActive: boolean, requester: JwtPayload) {
+    if (id === requester.id && !isActive) {
       throw new BadRequestException(
         'No puedes desactivar tu propia cuenta de administrador',
       );
@@ -372,6 +396,12 @@ export class UsersService {
     const user = await this.usersRepository.findOne({ where: { id } });
     if (!user) {
       throw new NotFoundException('Usuario no encontrado');
+    }
+
+    if (user.role === Role.ADMIN && requester.role !== Role.SUPERADMIN) {
+      throw new ForbiddenException(
+        'No está permitido cambiar el estado de otro usuario con rol Administrador. Se requiere rol Superadmin.',
+      );
     }
 
     user.isActive = isActive;
@@ -412,7 +442,6 @@ export class UsersService {
       );
     }
 
-    // Traemos explícitamente el password porque suele estar oculto o excluido en queries comunes
     const user = await this.usersRepository.findOne({
       where: { id: userId },
       select: {

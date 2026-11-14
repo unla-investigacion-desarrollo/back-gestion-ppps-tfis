@@ -463,6 +463,7 @@ export class ProjectService {
       where: {
         student: { id_user: studentRequestId },
         project: { id: id },
+        active: false,
       },
     });
 
@@ -541,6 +542,7 @@ export class ProjectService {
       where: {
         professor: { id_user: professorRequestId },
         project: { id: id },
+        active: false,
       },
     });
 
@@ -820,6 +822,7 @@ export class ProjectService {
       title: project.title,
       category: project.projectType?.name || null,
       status: project.status,
+      createdAt: project.createdAt,
 
       students:
         project.activeStudents
@@ -905,5 +908,47 @@ export class ProjectService {
       message: 'Proyecto dado de baja y usuarios liberados exitosamente',
       status: project.status,
     };
+  }
+
+  async removeStudentFromProject(id: number, studentId: number) {
+    const relation = await this.activeStudentProjectRepository.findOne({
+      where: {
+        student: { id_user: studentId },
+        project: { id: id },
+        active: true,
+      },
+    });
+
+    if (!relation) {
+      throw new NotFoundException(
+        'El estudiante no se encuentra activo en este proyecto',
+      );
+    }
+
+    relation.active = false;
+    await this.activeStudentProjectRepository.save(relation);
+
+    return { message: 'Estudiante desvinculado del proyecto exitosamente' };
+  }
+
+  async removeProfessorFromProject(id: number, professorId: number) {
+    const relation = await this.activeProfessorProjectRepository.findOne({
+      where: {
+        professor: { id_user: professorId },
+        project: { id: id },
+        active: true,
+      },
+    });
+
+    if (!relation) {
+      throw new NotFoundException(
+        'El docente no se encuentra activo en este proyecto',
+      );
+    }
+
+    relation.active = false;
+    await this.activeProfessorProjectRepository.save(relation);
+
+    return { message: 'Docente desvinculado del proyecto exitosamente' };
   }
 }

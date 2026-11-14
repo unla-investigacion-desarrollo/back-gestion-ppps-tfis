@@ -99,6 +99,7 @@ export class PppService {
         isActive: true,
         isSiuLoaded: false,
       },
+      relations: ['student'],
     });
 
     const activePpp = studentPpps.find(
@@ -424,18 +425,17 @@ export class PppService {
       throw new ForbiddenException('No tenés permisos sobre esta PPP');
     }
 
-    if (ppp.status === PppStatus.IN_REVIEW) {
-      throw new BadRequestException('El trámite ya se encuentra en revisión');
-    }
-    if (ppp.status === PppStatus.APPROVED) {
+    if (
+      ppp.status !== PppStatus.PENDING_DOCUMENTATION &&
+      ppp.status !== PppStatus.OBSERVED
+    ) {
       throw new BadRequestException(
-        'No podés notificar envíos sobre un trámite aprobado',
+        'Solo se puede notificar el envío de documentación si el tramite está pendiente de documentación u observado',
       );
     }
 
     ppp.status = PppStatus.IN_REVIEW;
     await this.pppRepository.save(ppp);
-
     return {
       message: 'Constancia de envío notificada. El trámite pasa a revisión',
       id: ppp.id,
@@ -449,9 +449,9 @@ export class PppService {
     const ppp = await this.pppRepository.findOne({ where: { id } });
     if (!ppp) throw new NotFoundException('Trámite de PPP no encontrado');
 
-    if (ppp.status === PppStatus.APPROVED) {
+    if (ppp.status !== PppStatus.IN_REVIEW) {
       throw new BadRequestException(
-        'No se pueden hacer observaciones sobre una PPP aprobada',
+        'Solo se pueden hacer observaciones sobre un trámite que se encuentra en revisión.',
       );
     }
 
@@ -483,16 +483,12 @@ export class PppService {
     }
 
     if (
-      ppp.status === PppStatus.DROPPED_OUT ||
-      ppp.status === PppStatus.APPLICATION_REJECTED
+      ppp.status !== PppStatus.IN_REVIEW &&
+      ppp.status !== PppStatus.OBSERVED
     ) {
       throw new BadRequestException(
-        'No se puede calificar una PPP que fue abandonada o rechazada.',
+        'Solo se puede calificar un trámite que se encuentra en revisión u observado.',
       );
-    }
-
-    if (ppp.status === PppStatus.APPROVED) {
-      throw new BadRequestException('La PPP ya se encuentra aprobada');
     }
 
     ppp.status = PppStatus.APPROVED;
@@ -523,11 +519,12 @@ export class PppService {
     }
 
     if (
-      ppp.status === PppStatus.DROPPED_OUT ||
-      ppp.status === PppStatus.APPLICATION_REJECTED
+      ppp.status === PppStatus.PENDING_APPLICATION ||
+      ppp.status === PppStatus.APPLICATION_REJECTED ||
+      ppp.status === PppStatus.DROPPED_OUT
     ) {
       throw new BadRequestException(
-        'No se puede calificar una PPP que fue abandonada o rechazada',
+        'No se puede calificar un trámite que está pendiente de aceptación, rechazado o abandonado.',
       );
     }
 
@@ -567,9 +564,12 @@ export class PppService {
       );
     }
 
-    if (ppp.status !== PppStatus.PENDING_DOCUMENTATION) {
+    if (
+      ppp.status !== PppStatus.PENDING_APPLICATION &&
+      ppp.status !== PppStatus.PENDING_DOCUMENTATION
+    ) {
       throw new BadRequestException(
-        'Solo se puede abandonar la PPP mientras se encuentre pendiente de entrega de documentación. Si ya entró en evaluación o tiene nota, debe resolverse académicamente',
+        'Solo se puede abandonar la PPP mientras esté pendiente de aceptación o de entrega de documentación. Si ya entró en evaluación o tiene nota, debe resolverse académicamente',
       );
     }
 
@@ -604,6 +604,7 @@ export class PppService {
     }
 
     ppp.isSiuLoaded = true;
+    ppp.isActive = false;
     await this.pppRepository.save(ppp);
 
     return {
@@ -611,6 +612,7 @@ export class PppService {
         'Nota asentada en el SIU con éxito. Trámite archivado del período activo',
       id: ppp.id,
       isSiuLoaded: ppp.isSiuLoaded,
+      isActive: ppp.isActive,
     };
   }
 

@@ -193,4 +193,24 @@ export class ProjectController {
       req.user,
     );
   }
+
+  @Patch(':id/remove-student/:studentId')
+  @Roles(Role.ADMIN)
+  @UseGuards(AuthGuard, RolesGuard)
+  async removeStudent(
+    @Param('id') id: string,
+    @Param('studentId') studentId: string,
+  ) {
+    return this.projectService.removeStudentFromProject(+id, +studentId);
+  }
+
+  @Patch(':id/remove-professor/:professorId')
+  @Roles(Role.ADMIN)
+  @UseGuards(AuthGuard, RolesGuard)
+  async removeProfessor(
+    @Param('id') id: string,
+    @Param('professorId') professorId: string,
+  ) {
+    return this.projectService.removeProfessorFromProject(+id, +professorId);
+  }
 }

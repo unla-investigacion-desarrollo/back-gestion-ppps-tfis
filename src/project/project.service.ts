@@ -799,7 +799,11 @@ export class ProjectService {
       isEvaluator = professor ? !professor.isTutor : false;
     }
 
-    if (user.role === Role.ADMIN || isEvaluator) {
+    if (
+      user.role === Role.ADMIN ||
+      user.role === Role.SUPERADMIN ||
+      isEvaluator
+    ) {
       projects = await this.projectsRepository.find({
         relations: baseRelations,
       });

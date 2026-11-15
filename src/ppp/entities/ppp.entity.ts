@@ -68,4 +68,7 @@ export class Ppp {
 
   @UpdateDateColumn()
   updatedAt: Date;
+
+  @Column({ type: 'text', nullable: true })
+  feedback?: string;
 }

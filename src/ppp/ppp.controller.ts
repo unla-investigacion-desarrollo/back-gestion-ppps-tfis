@@ -13,6 +13,8 @@ import {
   Request,
   Patch,
   Delete,
+  UseInterceptors,
+  UploadedFile,
 } from '@nestjs/common';
 import { PppService } from './ppp.service';
 import { CreatePppProposalDto } from './dto/create-ppp-proposal.dto';
@@ -24,6 +26,9 @@ import { RolesGuard } from 'src/auth/guard/roles.guard';
 import { JwtPayload } from 'src/auth/types/jwt-payload.interface';
 import { UpdateProposalStatusDto } from './dto/update-proposal-status.dto';
 import { UpdatePppSettingDto } from './dto/update-ppp-setting.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import 'multer';
+import { UpdatePppProposalDto } from './dto/update-ppp-proposal.dto';
 
 @Controller('ppp')
 export class PppController {
@@ -108,6 +113,27 @@ export class PppController {
     return await this.pppService.changeProposalStatus(+id, dto, req.user);
   }
 
+  @Patch('proposals/:id')
+  @Roles(Role.ADMIN, Role.PROFESSOR)
+  @UseGuards(AuthGuard, RolesGuard)
+  async updateProposal(
+    @Param('id') id: string,
+    @Body() dto: UpdatePppProposalDto,
+    @Request() req: Request & { user: JwtPayload },
+  ) {
+    return await this.pppService.updateProposal(+id, dto, req.user);
+  }
+
+  @Delete('proposals/:id')
+  @Roles(Role.ADMIN, Role.PROFESSOR)
+  @UseGuards(AuthGuard, RolesGuard)
+  async removeProposal(
+    @Param('id') id: string,
+    @Request() req: Request & { user: JwtPayload },
+  ) {
+    return await this.pppService.removeProposal(+id, req.user);
+  }
+
   @Get('general-drive')
   @Roles(Role.ADMIN, Role.PROFESSOR, Role.STUDENT)
   @UseGuards(AuthGuard, RolesGuard)
@@ -159,11 +185,13 @@ export class PppController {
   @Patch(':id/notify-sent')
   @Roles(Role.STUDENT)
   @UseGuards(AuthGuard, RolesGuard)
+  @UseInterceptors(FileInterceptor('file'))
   async notifyDocumentationSent(
     @Param('id') id: string,
+    @UploadedFile() file: Express.Multer.File,
     @Request() req: Request & { user: JwtPayload },
   ) {
-    return await this.pppService.notifyDocumentationSent(+id, req.user);
+    return await this.pppService.notifyDocumentationSent(+id, file, req.user);
   }
 
   @Patch(':id/observe')
@@ -171,9 +199,10 @@ export class PppController {
   @UseGuards(AuthGuard, RolesGuard)
   async markAsObserved(
     @Param('id') id: string,
+    @Body('feedback') feedback: string,
     @Request() req: Request & { user: JwtPayload },
   ) {
-    return await this.pppService.markAsObserved(+id, req.user);
+    return await this.pppService.markAsObserved(+id, req.user, feedback);
   }
 
   @Patch(':id/approve')

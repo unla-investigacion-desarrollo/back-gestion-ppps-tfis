@@ -130,7 +130,7 @@ export class ProjectService {
       ],
     });
 
-    if (user.role === Role.ADMIN) {
+    if (user.role === Role.ADMIN || user.role === Role.SUPERADMIN) {
       return projects;
     }
 
@@ -182,7 +182,7 @@ export class ProjectService {
       throw new NotFoundException('Proyecto no encontrado');
     }
 
-    if (user.role === Role.ADMIN) {
+    if (user.role === Role.ADMIN || user.role === Role.SUPERADMIN) {
       return project;
     }
 
@@ -799,7 +799,11 @@ export class ProjectService {
       isEvaluator = professor ? !professor.isTutor : false;
     }
 
-    if (user.role === Role.ADMIN || isEvaluator) {
+    if (
+      user.role === Role.ADMIN ||
+      user.role === Role.SUPERADMIN ||
+      isEvaluator
+    ) {
       projects = await this.projectsRepository.find({
         relations: baseRelations,
       });

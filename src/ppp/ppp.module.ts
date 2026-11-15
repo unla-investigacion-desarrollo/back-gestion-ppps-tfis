@@ -12,6 +12,7 @@ import { AuthModule } from 'src/auth/auth.module';
 import { PppProposal } from './entities/ppp-proposal.entity';
 import { Professor } from 'src/users/entities/professor.entity';
 import { PppSetting } from './entities/ppp-setting.entity';
+import { MailModule } from 'src/mail/mail.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { PppSetting } from './entities/ppp-setting.entity';
       Professor,
     ]),
     AuthModule,
+    MailModule,
   ],
   controllers: [PppController],
   providers: [PppService],

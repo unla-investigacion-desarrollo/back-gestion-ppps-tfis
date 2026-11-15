@@ -326,6 +326,7 @@ export class PppService {
     }
 
     ppp.status = PppStatus.APPLICATION_REJECTED;
+    ppp.isActive = false;
     await this.pppRepository.save(ppp);
 
     return {
@@ -421,7 +422,11 @@ export class PppService {
     };
   }
 
-  async notifyDocumentationSent(id: number, file: Express.Multer.File) {
+  async notifyDocumentationSent(
+    id: number,
+    file: Express.Multer.File,
+    user: JwtPayload,
+  ) {
     const ppp = await this.pppRepository.findOne({
       where: { id },
       relations: ['student', 'student.user', 'proposal'],
@@ -429,6 +434,21 @@ export class PppService {
 
     if (!ppp)
       throw new NotFoundException('Práctica Pre-Profesional no encontrada');
+
+    if (ppp.student.id_user !== user.id) {
+      throw new ForbiddenException(
+        'No tenés permisos para enviar documentación a un trámite que no es tuyo.',
+      );
+    }
+
+    if (
+      ppp.status !== PppStatus.PENDING_DOCUMENTATION &&
+      ppp.status !== PppStatus.OBSERVED
+    ) {
+      throw new BadRequestException(
+        'Solo podés enviar documentación si el trámite está pendiente de entrega o fue observado.',
+      );
+    }
     if (!file)
       throw new BadRequestException(
         'Es obligatorio adjuntar el archivo PDF de la documentación.',
@@ -631,6 +651,7 @@ export class PppService {
     }
 
     ppp.status = PppStatus.DROPPED_OUT;
+    ppp.isActive = false;
     await this.pppRepository.save(ppp);
 
     return {
@@ -773,7 +794,12 @@ export class PppService {
     });
   }
 
-  async updateProposal(id: number, dto: UpdatePppProposalDto) {
+  async updateProposal(
+    id: number,
+    dto: UpdatePppProposalDto,
+    user: JwtPayload,
+  ) {
+    await this.validateNotTutor(user);
     const proposal = await this.proposalRepository.findOne({
       where: { id },
     });
@@ -790,7 +816,8 @@ export class PppService {
     };
   }
 
-  async removeProposal(id: number) {
+  async removeProposal(id: number, user: JwtPayload) {
+    await this.validateNotTutor(user);
     const proposal = await this.proposalRepository.findOne({
       where: { id },
       relations: ['applications'],

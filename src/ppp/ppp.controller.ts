@@ -119,15 +119,19 @@ export class PppController {
   async updateProposal(
     @Param('id') id: string,
     @Body() dto: UpdatePppProposalDto,
+    @Request() req: Request & { user: JwtPayload },
   ) {
-    return await this.pppService.updateProposal(+id, dto);
+    return await this.pppService.updateProposal(+id, dto, req.user);
   }
 
   @Delete('proposals/:id')
   @Roles(Role.ADMIN, Role.PROFESSOR)
   @UseGuards(AuthGuard, RolesGuard)
-  async removeProposal(@Param('id') id: string) {
-    return await this.pppService.removeProposal(+id);
+  async removeProposal(
+    @Param('id') id: string,
+    @Request() req: Request & { user: JwtPayload },
+  ) {
+    return await this.pppService.removeProposal(+id, req.user);
   }
 
   @Get('general-drive')
@@ -185,8 +189,9 @@ export class PppController {
   async notifyDocumentationSent(
     @Param('id') id: string,
     @UploadedFile() file: Express.Multer.File,
+    @Request() req: Request & { user: JwtPayload },
   ) {
-    return await this.pppService.notifyDocumentationSent(+id, file);
+    return await this.pppService.notifyDocumentationSent(+id, file, req.user);
   }
 
   @Patch(':id/observe')

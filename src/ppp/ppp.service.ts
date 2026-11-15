@@ -23,6 +23,9 @@ import { JwtPayload } from 'src/auth/types/jwt-payload.interface';
 import { UpdateProposalStatusDto } from './dto/update-proposal-status.dto';
 import { UpdatePppSettingDto } from './dto/update-ppp-setting.dto';
 import { PppSetting } from './entities/ppp-setting.entity';
+import { MailService } from 'src/mail/mail.service';
+import { ConfigService } from '@nestjs/config';
+import { UpdatePppProposalDto } from './dto/update-ppp-proposal.dto';
 
 @Injectable()
 export class PppService {
@@ -41,6 +44,10 @@ export class PppService {
 
     @InjectRepository(Professor)
     private readonly professorRepository: Repository<Professor>,
+
+    private readonly mailService: MailService,
+
+    private readonly configService: ConfigService,
   ) {}
 
   async getDriveUrl() {
@@ -414,28 +421,41 @@ export class PppService {
     };
   }
 
-  async notifyDocumentationSent(id: number, user: JwtPayload) {
+  async notifyDocumentationSent(id: number, file: Express.Multer.File) {
     const ppp = await this.pppRepository.findOne({
       where: { id },
-      relations: ['student'],
+      relations: ['student', 'student.user', 'proposal'],
     });
 
-    if (!ppp) throw new NotFoundException('Trámite de PPP no encontrado');
-    if (ppp.student.id_user !== user.id) {
-      throw new ForbiddenException('No tenés permisos sobre esta PPP');
-    }
-
-    if (
-      ppp.status !== PppStatus.PENDING_DOCUMENTATION &&
-      ppp.status !== PppStatus.OBSERVED
-    ) {
+    if (!ppp)
+      throw new NotFoundException('Práctica Pre-Profesional no encontrada');
+    if (!file)
       throw new BadRequestException(
-        'Solo se puede notificar el envío de documentación si el tramite está pendiente de documentación u observado',
+        'Es obligatorio adjuntar el archivo PDF de la documentación.',
       );
-    }
 
     ppp.status = PppStatus.IN_REVIEW;
     await this.pppRepository.save(ppp);
+
+    const emailGus = this.configService.get<string>('PPP_EVALUATOR_EMAIL');
+    const emailLaura = this.configService.get<string>('PPP_EVALUATOR_CC');
+
+    const studentName =
+      ppp.student && ppp.student.user
+        ? `${ppp.student.user.firstName} ${ppp.student.user.lastName}`
+        : 'Estudiante';
+
+    const proposalTitle =
+      ppp.type === PppType.INTERNAL && ppp.proposal
+        ? ppp.proposal.title
+        : 'Práctica Externa';
+
+    this.mailService
+      .sendPppAlertEmail(emailGus, emailLaura, studentName, proposalTitle, file)
+      .catch((e) =>
+        console.error('Error enviando mail a coordinación PPP:', e),
+      );
+
     return {
       message: 'Constancia de envío notificada. El trámite pasa a revisión',
       id: ppp.id,
@@ -443,10 +463,13 @@ export class PppService {
     };
   }
 
-  async markAsObserved(id: number, user: JwtPayload) {
+  async markAsObserved(id: number, user: JwtPayload, feedback: string) {
     await this.validateNotTutor(user);
 
-    const ppp = await this.pppRepository.findOne({ where: { id } });
+    const ppp = await this.pppRepository.findOne({
+      where: { id, isActive: true },
+      relations: ['student', 'student.user'],
+    });
     if (!ppp) throw new NotFoundException('Trámite de PPP no encontrado');
 
     if (ppp.status !== PppStatus.IN_REVIEW) {
@@ -456,8 +479,17 @@ export class PppService {
     }
 
     ppp.status = PppStatus.OBSERVED;
+    ppp.feedback = feedback;
     await this.pppRepository.save(ppp);
-
+    this.mailService
+      .sendStatusUpdateEmail(
+        ppp.student.user.email,
+        ppp.student.user.firstName,
+        'Práctica Pre-Profesional (PPP)',
+        'Observado',
+        `Se han dejado observaciones en tu documentación: "${feedback}". Por favor, ingresá para revisarlas.`,
+      )
+      .catch((e) => console.error('Fallo el mail, pero la DB guardó bien', e));
     return {
       message: 'Trámite marcado con observaciones exitosamente',
       id: ppp.id,
@@ -470,6 +502,7 @@ export class PppService {
 
     const ppp = await this.pppRepository.findOne({
       where: { id, isActive: true },
+      relations: ['student', 'student.user'],
     });
 
     if (!ppp) {
@@ -493,7 +526,17 @@ export class PppService {
 
     ppp.status = PppStatus.APPROVED;
     await this.pppRepository.save(ppp);
-
+    if (ppp.student && ppp.student.user) {
+      this.mailService
+        .sendStatusUpdateEmail(
+          ppp.student.user.email,
+          ppp.student.user.firstName,
+          'Práctica Pre-Profesional (PPP)',
+          'Aprobado',
+          'Felicitaciones!!! Tu documentación fue revisada y tu Práctica Pre-Profesional ha sido aprobada. A la brevedad será registrada en el SIU Guaraní.',
+        )
+        .catch((e) => console.error('Fallo mail de aprobación al alumno:', e));
+    }
     return {
       message: 'PPP aprobada exitosamente',
       id: ppp.id,
@@ -506,6 +549,7 @@ export class PppService {
 
     const ppp = await this.pppRepository.findOne({
       where: { id, isActive: true },
+      relations: ['student', 'student.user'],
     });
 
     if (!ppp) {
@@ -535,6 +579,19 @@ export class PppService {
     ppp.status = PppStatus.DISAPPROVED;
     await this.pppRepository.save(ppp);
 
+    if (ppp.student && ppp.student.user) {
+      this.mailService
+        .sendStatusUpdateEmail(
+          ppp.student.user.email,
+          ppp.student.user.firstName,
+          'Práctica Pre-Profesional (PPP)',
+          'Desaprobado',
+          'Tu trámite ha sido calificado como desaprobado. A la brevedad será registrada en el SIU Guaraní.',
+        )
+        .catch((e) =>
+          console.error('Fallo mail de desaprobación al alumno:', e),
+        );
+    }
     return {
       message: 'PPP registrada como desaprobada',
       id: ppp.id,
@@ -545,7 +602,7 @@ export class PppService {
   async abandonPpp(id: number, user: JwtPayload) {
     const ppp = await this.pppRepository.findOne({
       where: { id, isActive: true },
-      relations: ['student'],
+      relations: ['student', 'student.user'],
     });
 
     if (!ppp) {
@@ -592,9 +649,12 @@ export class PppService {
 
     if (!ppp)
       throw new NotFoundException('Trámite de PPP no encontrado o inactivo');
-    if (ppp.status !== PppStatus.APPROVED) {
+    if (
+      ppp.status !== PppStatus.APPROVED &&
+      ppp.status !== PppStatus.DISAPPROVED
+    ) {
       throw new BadRequestException(
-        'Solo se pueden asentar en el SIU los trámites aprobados',
+        'Solo se pueden asentar en el SIU trámites que ya tengan una resolución (Aprobados o Desaprobados).',
       );
     }
     if (ppp.isSiuLoaded) {
@@ -711,5 +771,45 @@ export class PppService {
           : null,
       };
     });
+  }
+
+  async updateProposal(id: number, dto: UpdatePppProposalDto) {
+    const proposal = await this.proposalRepository.findOne({
+      where: { id },
+    });
+
+    if (!proposal) {
+      throw new NotFoundException('Propuesta de PPP no encontrada');
+    }
+
+    await this.proposalRepository.update(id, dto);
+
+    return {
+      message: 'Propuesta de PPP actualizada exitosamente',
+      id: proposal.id,
+    };
+  }
+
+  async removeProposal(id: number) {
+    const proposal = await this.proposalRepository.findOne({
+      where: { id },
+      relations: ['applications'],
+    });
+
+    if (!proposal) {
+      throw new NotFoundException('Propuesta de PPP no encontrada');
+    }
+
+    if (proposal.applications && proposal.applications.length > 0) {
+      throw new BadRequestException(
+        'No se puede eliminar una propuesta que ya tiene alumnos postulados. Si no querés recibir más inscripciones, podés cerrarla editando su estado.',
+      );
+    }
+
+    await this.proposalRepository.remove(proposal);
+
+    return {
+      message: 'Propuesta eliminada exitosamente',
+    };
   }
 }

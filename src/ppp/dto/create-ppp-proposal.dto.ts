@@ -1,4 +1,10 @@
-import { IsNotEmpty, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUrl,
+  MaxLength,
+} from 'class-validator';
 
 export class CreatePppProposalDto {
   @IsString()
@@ -14,6 +20,7 @@ export class CreatePppProposalDto {
 
   @IsString()
   @IsOptional()
+  @IsUrl({}, { message: 'El enlace del Drive debe ser una URL válida' })
   driveFolderUrl?: string;
 
   @IsString()

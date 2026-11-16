@@ -743,7 +743,7 @@ export class ProjectService {
         project: {
           id: req.project.id,
           title: req.project.title,
-          type: req.project.projectType.name,
+          type: req.project.projectType?.name || 'Sin categoría',
         },
         applicant: {
           id: req.professor.id_user,
@@ -759,7 +759,7 @@ export class ProjectService {
         project: {
           id: req.project.id,
           title: req.project.title,
-          type: req.project.projectType.name,
+          type: req.project.projectType?.name || 'Sin categoría',
         },
         applicant: {
           id: req.student.id_user,

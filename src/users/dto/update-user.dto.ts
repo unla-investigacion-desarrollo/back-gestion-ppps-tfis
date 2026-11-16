@@ -36,6 +36,7 @@ export class UpdateUserDto {
   @IsString()
   fileNumber?: string;
 
+  @IsOptional()
   @IsInt()
   @Min(2008, { message: 'El año de ingreso no puede ser anterior a 2008.' })
   @Max(new Date().getFullYear(), {
@@ -43,6 +44,7 @@ export class UpdateUserDto {
   })
   yearOfAdmission: number;
 
+  @IsOptional()
   @IsInt()
   @Min(15, {
     message:
@@ -53,6 +55,7 @@ export class UpdateUserDto {
   })
   completedCoursesWithFinal: number;
 
+  @IsOptional()
   @IsInt()
   @Min(0, {
     message: 'Las materias sin final no pueden ser un número negativo.',

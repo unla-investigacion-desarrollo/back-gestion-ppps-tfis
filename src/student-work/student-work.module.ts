@@ -8,6 +8,7 @@ import { Professor } from 'src/users/entities/professor.entity';
 import { Student } from 'src/users/entities/student.entity';
 import { AuthModule } from 'src/auth/auth.module';
 import { ActiveStudentProject } from 'src/project/entities/active-student-project.entity';
+import { MailModule } from 'src/mail/mail.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { ActiveStudentProject } from 'src/project/entities/active-student-projec
       ActiveStudentProject,
     ]),
     AuthModule,
+    MailModule,
   ],
   controllers: [StudentWorkController],
   providers: [StudentWorkService],

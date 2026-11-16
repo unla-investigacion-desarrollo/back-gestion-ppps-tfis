@@ -3,72 +3,119 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Acción Requerida - Gestión del Sistema</title>
+  <title>Notificación - Gestión PPP y TFI</title>
 </head>
-<body style="margin: 0; padding: 0; background-color: #f4f6f8; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; color: #333333;">
-  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color: #f4f6f8; padding: 40px 15px;">
+
+<body style="margin:0; padding:0; background-color:#f3f4f6; font-family:Arial, Helvetica, sans-serif; color:#263445;">
+
+  <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="background-color:#f3f4f6; padding:35px 15px;">
     <tr>
       <td align="center">
-        <table role="presentation" width="100%" style="max-width: 600px; background-color: #ffffff; border-radius: 8px; overflow: hidden; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);" cellspacing="0" cellpadding="0" border="0">
-          
+
+        <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="max-width:580px; background-color:#ffffff; border-radius:10px; overflow:hidden;">
+
+          <!-- ENCABEZADO -->
           <tr>
-            <td style="background-color: #7c1331; padding: 30px 40px; text-align: center;">
-              <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 700; letter-spacing: -0.5px;">
+            <td style="background-color:#7C1331; padding:28px 35px;">
+              <p style="margin:0 0 8px; color:#F2DCE3; font-size:11px; font-weight:bold; letter-spacing:1px;">
+                UNIVERSIDAD NACIONAL DE LANÚS
+              </p>
+              <h1 style="margin:0; color:#ffffff; font-size:21px; font-weight:600;">
                 Gestión de PPP y TFI
               </h1>
             </td>
           </tr>
 
+          <!-- CONTENIDO -->
           <tr>
-            <td style="padding: 40px 40px 30px 40px;">
-              <h2 style="margin: 0 0 16px; color: #1e293b; font-size: 20px; font-weight: 600;">
-                ¡Hola, {{name}}!
+            <td style="padding:35px 35px 20px;">
+              <p style="margin:0 0 10px; color:#7C1331; font-size:12px; font-weight:bold; letter-spacing:1px;">
+                NOTIFICACIÓN DEL SISTEMA
+              </p>
+              <h2 style="margin:0 0 18px; color:#263445; font-size:23px; font-weight:600;">
+                Hola, {{name}}
               </h2>
-              <p style="margin: 0 0 16px; color: #475569; font-size: 15px; line-height: 1.6;">
-                El sistema requiere tu intervención para continuar con el flujo de un trámite de <strong>{{processName}}</strong>.
+              <p style="margin:0 0 15px; color:#526071; font-size:15px; line-height:1.7;">
+                Se registró una novedad en el sistema relacionada con <strong style="color:#263445;">{{processName}}</strong>.
+              </p>
+              <p style="margin:0 0 25px; color:#526071; font-size:15px; line-height:1.7;">
+                A continuación, encontrarás los detalles de la notificación y la acción que corresponde realizar.
               </p>
 
-              <div style="background-color: #fffbeb; border-left: 4px solid #d97706; padding: 16px; margin: 24px 0; border-radius: 0 4px 4px 0;">
-                <p style="margin: 0 0 8px; color: #92400e; font-size: 13px; text-transform: uppercase; letter-spacing: 0.5px; font-weight: 600;">
-                  Acción Pendiente
-                </p>
-                <p style="margin: 0; color: #0f172a; font-size: 16px; font-weight: 600;">
-                  {{actionRequired}}
-                </p>
-                <p style="margin: 8px 0 0 0; color: #475569; font-size: 14px;">
-                    <strong>{{referenceLabel}}:</strong> {{referenceValue}}
-                </p>
-              </div>
-
-              <table role="presentation" cellspacing="0" cellpadding="0" border="0" style="margin: 30px 0;">
+              <!-- DETALLE DE LA NOTIFICACIÓN -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top:25px;">
                 <tr>
-                  <td align="center" style="border-radius: 6px; background-color: #2563eb;">
-                    <a href="{{loginUrl}}" target="_blank" style="display: inline-block; padding: 12px 28px; font-size: 15px; color: #ffffff; text-decoration: none; font-weight: 600; border-radius: 6px;">
-                      Ir a gestionar
-                    </a>
+                  <td style="padding-bottom:15px;">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                      <tr>
+                        <td width="4" bgcolor="#7C1331" style="width:4px; border-radius:3px;"></td>
+                        <td style="padding-left:12px; color:#7C1331; font-size:12px; font-weight:bold; letter-spacing:0.8px;">
+                          DETALLE DE LA NOTIFICACIÓN
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+                <tr>
+                  <td style="padding:0 0 20px; color:#263445; font-size:15px; line-height:1.7;">
+                    {{actionRequired}}
+                  </td>
+                </tr>
+                <tr>
+                  <td style="border-top:1px solid #E8E8E8; padding-top:16px;">
+                    <p style="margin:0 0 6px; color:#7B8794; font-size:12px; font-weight:normal; letter-spacing:0.3px;">
+                      {{referenceLabel}}
+                    </p>
+                    <p style="margin:0; color:#263445; font-size:14px; font-weight:bold; line-height:1.6;">
+                      {{referenceValue}}
+                    </p>
                   </td>
                 </tr>
               </table>
+
+              <!-- ACCESO AL SISTEMA -->
+              <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0" style="margin-top:30px;">
+                <tr>
+                  <td align="center">
+                    <table role="presentation" cellspacing="0" cellpadding="0" border="0">
+                      <tr>
+                        <td align="center" bgcolor="#7C1331" style="border-radius:6px;">
+                          <a href="{{loginUrl}}" target="_blank" style="display:inline-block; padding:15px 32px; color:#ffffff; font-size:14px; font-weight:bold; text-decoration:none;">
+                            Ingresar al sistema
+                          </a>
+                        </td>
+                      </tr>
+                    </table>
+                  </td>
+                </tr>
+              </table>
+
+              <p style="margin:20px 0 0; color:#8993A0; font-size:12px; line-height:1.6; text-align:center;">
+                Desde el sistema podrás consultar la información y realizar las acciones correspondientes.
+              </p>
             </td>
           </tr>
 
+          <!-- PIE -->
           <tr>
-            <td style="padding: 0 40px;">
-              <hr style="border: 0; border-top: 1px solid #e2e8f0; margin: 0;">
-            </td>
-          </tr>
-
-          <tr>
-            <td style="padding: 24px 40px; text-align: center; background-color: #fafafa;">
-              <p style="margin: 0 0 6px; color: #94a3b8; font-size: 12px;">
-                Este es un aviso automático del sistema para personal de la UNLa.
+            <td style="padding:22px 30px; background-color:#FAFAFA; border-top:1px solid #EEEEEE; text-align:center;">
+              <p style="margin:0 0 7px; color:#526071; font-size:13px; font-weight:bold;">
+                Gestión de PPP y TFI
+              </p>
+              <p style="margin:0 0 5px; color:#929BA6; font-size:11px; line-height:1.6;">
+                Universidad Nacional de Lanús
+              </p>
+              <p style="margin:0; color:#A0A8B1; font-size:11px;">
+                Este es un mensaje automático. Por favor, no respondas a este correo.
               </p>
             </td>
           </tr>
 
         </table>
+
       </td>
     </tr>
   </table>
+
 </body>
 </html>

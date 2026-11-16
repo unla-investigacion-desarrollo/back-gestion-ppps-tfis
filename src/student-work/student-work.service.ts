@@ -18,6 +18,7 @@ import { JwtPayload } from 'src/auth/types/jwt-payload.interface';
 import { UpdateStudentWorkDto } from './dto/update-student-work.dto';
 import { ActiveStudentProject } from 'src/project/entities/active-student-project.entity';
 import { QualificationResponse } from './interfaces/qualification-response.interface';
+import { MailService } from 'src/mail/mail.service';
 
 @Injectable()
 export class StudentWorkService {
@@ -32,6 +33,8 @@ export class StudentWorkService {
     private readonly studentRepository: Repository<Student>,
     @InjectRepository(ActiveStudentProject)
     private readonly activeStudentProjectRepository: Repository<ActiveStudentProject>,
+
+    private readonly mailService: MailService,
   ) {}
 
   async findAll(status?: StudentWorkStatus) {
@@ -52,6 +55,11 @@ export class StudentWorkService {
   async create(projectId: number, createStudentWorkDto: CreateStudentWorkDto) {
     const project = await this.projectRepository.findOne({
       where: { id: projectId },
+      relations: [
+        'activeProfessors',
+        'activeProfessors.professor',
+        'activeProfessors.professor.user',
+      ],
     });
     if (!project) {
       throw new NotFoundException('Proyecto no encontrado');
@@ -74,7 +82,27 @@ export class StudentWorkService {
     });
 
     const savedWork = await this.workRepository.save(work);
+    const evaluadores = await this.professorRepository.find({
+      where: { isTutor: false },
+      relations: ['user'],
+    });
 
+    const correosEvaluadores = evaluadores
+      .filter((prof) => prof.user && prof.user.email)
+      .map((prof) => prof.user.email);
+
+    if (correosEvaluadores.length > 0) {
+      this.mailService
+        .sendStaffAlertEmail(
+          correosEvaluadores.join(', '),
+          'Equipo Evaluador',
+          'Revisión de Avances (TFI)',
+          'Se ha notificado nueva entrega de documentación de TFI. Se requiere revisión de la documentación.',
+          'Título del Proyecto',
+          project.title,
+        )
+        .catch((e) => console.error('Error enviando mail a evaluadores:', e));
+    }
     return {
       message: 'Entrega registrada con éxito',
       workId: savedWork.id,
@@ -224,7 +252,16 @@ export class StudentWorkService {
       );
     }
 
-    const work = await this.workRepository.findOne({ where: { id: workId } });
+    const work = await this.workRepository.findOne({
+      where: { id: workId },
+      relations: [
+        'project',
+        'project.activeStudents',
+        'project.activeStudents.student',
+        'project.activeStudents.student.user',
+      ],
+    });
+
     if (!work) {
       throw new NotFoundException('Entrega no encontrada');
     }
@@ -247,6 +284,25 @@ export class StudentWorkService {
 
     await this.workRepository.save(work);
 
+    if (work.project.activeStudents) {
+      work.project.activeStudents.forEach((activeStudent) => {
+        if (activeStudent.active && activeStudent.student.user) {
+          const studentUser = activeStudent.student.user;
+          this.mailService
+            .sendStatusUpdateEmail(
+              studentUser.email,
+              studentUser.firstName,
+              work.project.title,
+              'Observado',
+              `El evaluador ${professor.user.firstName} ${professor.user.lastName} ha dejado observaciones en tu entrega de documentación.`,
+            )
+            .catch((e) =>
+              console.error('Error enviando mail de observación:', e),
+            );
+        }
+      });
+    }
+
     return {
       message: 'Entrega marcada con observaciones exitosamente',
       workId: work.id,
@@ -261,7 +317,11 @@ export class StudentWorkService {
   }
 
   async notifyAdvances(workId: number) {
-    const work = await this.workRepository.findOne({ where: { id: workId } });
+    const work = await this.workRepository.findOne({
+      where: { id: workId },
+      relations: ['project'],
+    });
+
     if (!work) {
       throw new NotFoundException('Entrega no encontrada');
     }
@@ -281,6 +341,28 @@ export class StudentWorkService {
     work.status = StudentWorkStatus.PENDING_REVIEW;
     await this.workRepository.save(work);
 
+    const evaluadores = await this.professorRepository.find({
+      where: { isTutor: false },
+      relations: ['user'],
+    });
+
+    const correosEvaluadores = evaluadores
+      .filter((prof) => prof.user && prof.user.email)
+      .map((prof) => prof.user.email);
+
+    if (correosEvaluadores.length > 0) {
+      this.mailService
+        .sendStaffAlertEmail(
+          correosEvaluadores.join(', '),
+          'Equipo Evaluador',
+          'Revisión de Avances (TFI)',
+          'El estudiante ha notificado nuevos avances. Se requiere revisión de la documentación actualizada.',
+          'Título del Proyecto',
+          work.project.title,
+        )
+        .catch((e) => console.error('Error enviando mail a evaluadores:', e));
+    }
+
     return {
       message: 'Avances notificados a la cátedra con éxito',
       workId: work.id,
@@ -289,7 +371,16 @@ export class StudentWorkService {
   }
 
   async requestTutoring(workId: number) {
-    const work = await this.workRepository.findOne({ where: { id: workId } });
+    const work = await this.workRepository.findOne({
+      where: { id: workId },
+      relations: [
+        'project',
+        'project.activeProfessors',
+        'project.activeProfessors.professor',
+        'project.activeProfessors.professor.user',
+      ],
+    });
+
     if (!work) throw new NotFoundException('Entrega no encontrada');
 
     if (work.tutoringRequested) {
@@ -300,6 +391,30 @@ export class StudentWorkService {
 
     work.tutoringRequested = true;
     await this.workRepository.save(work);
+
+    if (work.project.activeProfessors) {
+      const correosTutores = work.project.activeProfessors
+        .filter(
+          (ap) =>
+            ap.active === true &&
+            ap.professor.isTutor === true &&
+            ap.professor.user,
+        )
+        .map((ap) => ap.professor.user.email);
+
+      if (correosTutores.length > 0) {
+        this.mailService
+          .sendStaffAlertEmail(
+            correosTutores.join(', '),
+            'Tutor del Proyecto',
+            'Solicitud de Tutoría (TFI)',
+            'El estudiante ha solicitado una tutoría para su proyecto.',
+            'Título del Proyecto',
+            work.project.title,
+          )
+          .catch((e) => console.error('Error enviando mail a tutores:', e));
+      }
+    }
 
     return {
       message: 'Solicitud de tutoría enviada al tutor exitosamente',
@@ -326,7 +441,16 @@ export class StudentWorkService {
       );
     }
 
-    const work = await this.workRepository.findOne({ where: { id: workId } });
+    const work = await this.workRepository.findOne({
+      where: { id: workId },
+      relations: [
+        'project',
+        'project.activeStudents',
+        'project.activeStudents.student',
+        'project.activeStudents.student.user',
+      ],
+    });
+
     if (!work) {
       throw new NotFoundException('Entrega no encontrada');
     }
@@ -342,6 +466,25 @@ export class StudentWorkService {
     work.lastTutoredAt = new Date();
 
     await this.workRepository.save(work);
+
+    if (work.project.activeStudents) {
+      work.project.activeStudents.forEach((activeStudent) => {
+        if (activeStudent.active && activeStudent.student.user) {
+          const studentUser = activeStudent.student.user;
+          this.mailService
+            .sendStatusUpdateEmail(
+              studentUser.email,
+              studentUser.firstName,
+              work.project.title,
+              'Tutoría Registrada',
+              `Tu tutor ${professor.user.firstName} ${professor.user.lastName} ha marcado que aportó nuevos comentarios en tu documentación.`,
+            )
+            .catch((e) =>
+              console.error('Error enviando mail de tutoría a alumno:', e),
+            );
+        }
+      });
+    }
 
     return {
       message: 'Tutoría registrada con éxito',

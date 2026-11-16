@@ -23,7 +23,7 @@ export class StudentWorkController {
   constructor(private readonly studentWorkService: StudentWorkService) {}
 
   @Post('project/:projectId')
-  @Roles(Role.STUDENT, Role.ADMIN)
+  @Roles(Role.STUDENT)
   @UseGuards(AuthGuard, RolesGuard)
   async create(
     @Param('projectId') projectId: string,
@@ -63,14 +63,14 @@ export class StudentWorkController {
   }
 
   @Patch(':id/notify-advances')
-  @Roles(Role.STUDENT, Role.ADMIN)
+  @Roles(Role.STUDENT)
   @UseGuards(AuthGuard, RolesGuard)
   async notifyAdvances(@Param('id') id: string) {
     return await this.studentWorkService.notifyAdvances(+id);
   }
 
   @Patch(':id/request-tutoring')
-  @Roles(Role.STUDENT, Role.ADMIN)
+  @Roles(Role.STUDENT)
   @UseGuards(AuthGuard, RolesGuard)
   async requestTutoring(@Param('id') id: string) {
     return await this.studentWorkService.requestTutoring(+id);
@@ -98,7 +98,7 @@ export class StudentWorkController {
   }
 
   @Patch(':id')
-  @Roles(Role.STUDENT, Role.ADMIN)
+  @Roles(Role.STUDENT)
   @UseGuards(AuthGuard, RolesGuard)
   update(
     @Param('id') id: string,

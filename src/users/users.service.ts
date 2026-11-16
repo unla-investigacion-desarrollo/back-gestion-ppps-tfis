@@ -123,8 +123,7 @@ export class UsersService {
   }
 
   async findAll() {
-    const users = await this.usersRepository.find();
-    return users.map(({ password, ...user }) => user);
+    return await this.usersRepository.find();
   }
 
   async findOne(id: number) {
@@ -133,8 +132,7 @@ export class UsersService {
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    const { password, ...userWithoutPassword } = user;
-    return userWithoutPassword;
+    return user;
   }
 
   async getProfile(userId: number, requester: JwtPayload) {
@@ -146,7 +144,11 @@ export class UsersService {
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    if (requester.id !== user.id && requester.role !== Role.ADMIN) {
+    if (
+      requester.id !== user.id &&
+      requester.role !== Role.ADMIN &&
+      requester.role !== Role.SUPERADMIN
+    ) {
       throw new ForbiddenException('No tienes permiso para ver este perfil');
     }
 
@@ -204,9 +206,12 @@ export class UsersService {
       throw new NotFoundException('Usuario no encontrado');
     }
 
-    if (user.role === Role.ADMIN && requester.role !== Role.SUPERADMIN) {
+    if (
+      (user.role === Role.ADMIN || user.role === Role.SUPERADMIN) &&
+      requester.role !== Role.SUPERADMIN
+    ) {
       throw new ForbiddenException(
-        'No está permitido eliminar a otro usuario con rol Administrador. Se requiere rol Superadmin.',
+        'No está permitido eliminar a un Administrador o SuperAdmin. Se requiere rol Superadmin',
       );
     }
 
@@ -329,59 +334,61 @@ export class UsersService {
   async updateProfile(
     userId: number,
     updateUserDto: UpdateUserDto,
-    requesterId: number,
+    reqUser: JwtPayload,
   ) {
-    const requester = await this.usersRepository.findOne({
-      where: { id: requesterId },
-    });
-    if (!requester) throw new NotFoundException('Solicitante no encontrado');
-
-    const targetUser = await this.usersRepository.findOne({
+    const userToUpdate = await this.usersRepository.findOne({
       where: { id: userId },
     });
-    if (!targetUser) throw new NotFoundException('Usuario no encontrado');
 
-    if (requester.id !== targetUser.id && requester.role !== Role.ADMIN) {
+    if (!userToUpdate) {
+      throw new NotFoundException('Usuario no encontrado');
+    }
+
+    if (
+      reqUser.id !== userToUpdate.id &&
+      reqUser.role !== Role.ADMIN &&
+      reqUser.role !== Role.SUPERADMIN
+    ) {
       throw new ForbiddenException(
         'No tienes permiso para actualizar este perfil',
       );
     }
 
-    Object.assign(targetUser, {
+    if (
+      userToUpdate.role === Role.SUPERADMIN &&
+      reqUser.role !== Role.SUPERADMIN
+    ) {
+      throw new ForbiddenException(
+        'Un Administrador no puede modificar a un SuperAdmin',
+      );
+    }
+
+    await this.usersRepository.update(userId, {
       firstName: updateUserDto.firstName,
       lastName: updateUserDto.lastName,
       dni: updateUserDto.dni,
       email: updateUserDto.email,
       fileNumber: updateUserDto.fileNumber,
     });
-    await this.usersRepository.save(targetUser);
 
-    if (targetUser.role === Role.STUDENT) {
-      const student = await this.studentsRepository.findOne({
-        where: { id_user: targetUser.id },
-      });
-      if (student) {
-        Object.assign(student, {
+    if (userToUpdate.role === Role.STUDENT) {
+      await this.studentsRepository.update(
+        { id_user: userToUpdate.id },
+        {
           yearOfAdmission: updateUserDto.yearOfAdmission,
           completedCoursesWithFinal: updateUserDto.completedCoursesWithFinal,
           completedCoursesWithoutFinal:
             updateUserDto.completedCoursesWithoutFinal,
-        });
-        await this.studentsRepository.save(student);
-      }
-    }
-
-    if (targetUser.role === Role.PROFESSOR) {
-      const professor = await this.professorsRepository.findOne({
-        where: { id_user: targetUser.id },
-      });
-      if (professor) {
-        Object.assign(professor, {
+        },
+      );
+    } else if (userToUpdate.role === Role.PROFESSOR) {
+      await this.professorsRepository.update(
+        { id_user: userToUpdate.id },
+        {
           specialization: updateUserDto.specialization,
           isTutor: updateUserDto.isTutor,
-        });
-        await this.professorsRepository.save(professor);
-      }
+        },
+      );
     }
 
     return { message: 'Perfil actualizado correctamente' };

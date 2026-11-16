@@ -394,6 +394,7 @@ export class PppService {
       status: ppp.status,
       isSiuLoaded: ppp.isSiuLoaded,
       previousKnowledge: ppp.previousKnowledge,
+      feedback: ppp.feedback,
       proposal: ppp.proposal
         ? {
             id: ppp.proposal.id,
@@ -778,6 +779,7 @@ export class PppService {
         status: ppp.status,
         isSiuLoaded: ppp.isSiuLoaded,
         previousKnowledge: ppp.previousKnowledge,
+        feedback: ppp.feedback,
         createdAt: ppp.createdAt,
         updatedAt: ppp.updatedAt,
         proposal: ppp.proposal

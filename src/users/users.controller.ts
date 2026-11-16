@@ -114,7 +114,6 @@ export class UsersController {
     @Body() updateUserDto: UpdateUserDto,
     @Request() req: Request & { user: JwtPayload },
   ) {
-    const requesterId = req.user.id;
-    return this.usersService.updateProfile(+id, updateUserDto, requesterId);
+    return this.usersService.updateProfile(+id, updateUserDto, req.user);
   }
 }

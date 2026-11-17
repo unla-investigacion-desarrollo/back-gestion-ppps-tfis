@@ -789,6 +789,7 @@ export class ProjectService {
           email: req.professor.user.email,
           specialization: req.professor.specialization,
         },
+        createdAt: req.createdAt,
       })),
 
       pendingStudents: pendingStudents.map((req) => ({
@@ -805,6 +806,7 @@ export class ProjectService {
           email: req.student.user.email,
           yearOfAdmission: req.student.yearOfAdmission,
         },
+        createdAt: req.createdAt,
       })),
     };
   }

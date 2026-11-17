@@ -1,6 +1,7 @@
 import { Student } from 'src/users/entities/student.entity';
 import {
   Column,
+  CreateDateColumn,
   Entity,
   JoinColumn,
   ManyToOne,
@@ -23,4 +24,7 @@ export class ActiveStudentProject {
 
   @Column({ default: false })
   active: boolean;
+
+  @CreateDateColumn()
+  createdAt: Date;
 }

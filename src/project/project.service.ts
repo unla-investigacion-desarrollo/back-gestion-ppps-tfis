@@ -20,6 +20,7 @@ import { ActiveProfessorProject } from './entities/active-professor-project.enti
 import { Student } from 'src/users/entities/student.entity';
 import { ActiveStudentProject } from './entities/active-student-project.entity';
 import { ProjectType } from './entities/project-type.entity';
+import { StudentWorkStatus } from 'src/student-work/entities/student-work.entity';
 
 @Injectable()
 export class ProjectService {
@@ -306,6 +307,14 @@ export class ProjectService {
 
     if (!professor) throw new NotFoundException('Profesor no encontrado');
 
+    if (
+      project.status === ProjectStatus.FINALIZED ||
+      project.status === ProjectStatus.CANCELLED
+    ) {
+      throw new BadRequestException(
+        'No se pueden enviar solicitudes a un proyecto que ya está finalizado o cancelado.',
+      );
+    }
     if (!professor?.isTutor) {
       throw new ForbiddenException(
         'Solo tutores pueden solicitar unirse a un proyecto',
@@ -341,6 +350,15 @@ export class ProjectService {
 
     if (!project) {
       throw new NotFoundException('Proyecto no encontrado');
+    }
+
+    if (
+      project.status === ProjectStatus.FINALIZED ||
+      project.status === ProjectStatus.CANCELLED
+    ) {
+      throw new BadRequestException(
+        'No se pueden enviar solicitudes a un proyecto que ya está finalizado o cancelado.',
+      );
     }
 
     const student = await this.studentRepository.findOne({
@@ -427,6 +445,15 @@ export class ProjectService {
       throw new NotFoundException('Solicitud no encontrada o ya aprobada');
     }
 
+    if (
+      request.project.status === ProjectStatus.FINALIZED ||
+      request.project.status === ProjectStatus.CANCELLED
+    ) {
+      throw new BadRequestException(
+        'No se puede aceptar al estudiante porque el proyecto ya se encuentra cerrado o dado de baja.',
+      );
+    }
+
     request.active = true;
     await this.activeStudentProjectRepository.save(request);
 
@@ -505,6 +532,15 @@ export class ProjectService {
 
     if (!request) {
       throw new NotFoundException('Solicitud no encontrada o ya aprobada');
+    }
+
+    if (
+      request.project.status === ProjectStatus.FINALIZED ||
+      request.project.status === ProjectStatus.CANCELLED
+    ) {
+      throw new BadRequestException(
+        'No se puede aceptar al profesor porque el proyecto ya se encuentra cerrado o dado de baja.',
+      );
     }
 
     request.active = true;
@@ -891,8 +927,7 @@ export class ProjectService {
     if (project.activeStudents && project.activeStudents.length > 0) {
       for (const studentRel of project.activeStudents) {
         if (studentRel.active) {
-          studentRel.active = false;
-          await this.activeStudentProjectRepository.save(studentRel);
+          await this.activeStudentProjectRepository.remove(studentRel); // ACÁ
         }
       }
     }
@@ -900,8 +935,7 @@ export class ProjectService {
     if (project.activeProfessors && project.activeProfessors.length > 0) {
       for (const profRel of project.activeProfessors) {
         if (profRel.active) {
-          profRel.active = false;
-          await this.activeProfessorProjectRepository.save(profRel);
+          await this.activeProfessorProjectRepository.remove(profRel); // ACÁ
         }
       }
     }
@@ -929,8 +963,7 @@ export class ProjectService {
       );
     }
 
-    relation.active = false;
-    await this.activeStudentProjectRepository.save(relation);
+    await this.activeStudentProjectRepository.remove(relation);
 
     return { message: 'Estudiante desvinculado del proyecto exitosamente' };
   }
@@ -950,9 +983,56 @@ export class ProjectService {
       );
     }
 
-    relation.active = false;
-    await this.activeProfessorProjectRepository.save(relation);
+    await this.activeProfessorProjectRepository.remove(relation);
 
     return { message: 'Docente desvinculado del proyecto exitosamente' };
+  }
+
+  async finalizeProject(id: number) {
+    const project = await this.projectsRepository.findOne({
+      where: { id },
+      relations: ['studentWork'],
+    });
+
+    if (!project) {
+      throw new NotFoundException('Proyecto no encontrado');
+    }
+
+    if (project.status === ProjectStatus.FINALIZED) {
+      throw new BadRequestException('El proyecto ya se encuentra finalizado.');
+    }
+
+    if (project.status === ProjectStatus.CANCELLED) {
+      throw new BadRequestException(
+        'No se puede finalizar un proyecto que fue cancelado.',
+      );
+    }
+
+    const validFinalStatuses = [
+      StudentWorkStatus.APPROVED,
+      StudentWorkStatus.DISAPPROVED,
+      StudentWorkStatus.ABSENT,
+    ];
+
+    if (!project.studentWork) {
+      throw new BadRequestException(
+        'No se puede finalizar: el proyecto no posee ninguna entrega de documentación.',
+      );
+    }
+
+    if (!validFinalStatuses.includes(project.studentWork.status)) {
+      throw new BadRequestException(
+        'No se puede finalizar el proyecto porque la entrega aún no tiene una calificación definitiva (Aprobada, Desaprobada o Ausente).',
+      );
+    }
+
+    project.status = ProjectStatus.FINALIZED;
+    await this.projectsRepository.save(project);
+
+    return {
+      message: 'Proyecto finalizado con éxito',
+      id: project.id,
+      status: project.status,
+    };
   }
 }

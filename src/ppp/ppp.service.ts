@@ -749,6 +749,20 @@ export class PppService {
     proposal.isOpen = dto.isOpen;
     await this.proposalRepository.save(proposal);
 
+    if (!dto.isOpen) {
+      await this.pppRepository.update(
+        {
+          proposal: { id: id },
+          status: PppStatus.PENDING_APPLICATION,
+          isActive: true,
+        },
+        {
+          status: PppStatus.APPLICATION_REJECTED,
+          isActive: false,
+        },
+      );
+    }
+
     return {
       message: dto.isOpen
         ? 'Convocatoria reabierta exitosamente'

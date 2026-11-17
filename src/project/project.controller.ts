@@ -213,4 +213,11 @@ export class ProjectController {
   ) {
     return this.projectService.removeProfessorFromProject(+id, +professorId);
   }
+
+  @Patch(':id/finalize')
+  @Roles(Role.ADMIN, Role.PROFESSOR)
+  @UseGuards(AuthGuard, RolesGuard)
+  async finalizeProject(@Param('id') id: string) {
+    return await this.projectService.finalizeProject(+id);
+  }
 }

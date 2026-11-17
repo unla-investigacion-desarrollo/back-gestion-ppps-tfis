@@ -908,7 +908,7 @@ export class ProjectService {
     }));
   }
 
-  async changeStatus(id: number) {
+  async cancelProject(id: number) {
     const project = await this.projectsRepository.findOne({
       where: { id },
       relations: ['activeStudents', 'activeProfessors'],
@@ -927,7 +927,7 @@ export class ProjectService {
     if (project.activeStudents && project.activeStudents.length > 0) {
       for (const studentRel of project.activeStudents) {
         if (studentRel.active) {
-          await this.activeStudentProjectRepository.remove(studentRel); // ACÁ
+          await this.activeStudentProjectRepository.remove(studentRel);
         }
       }
     }
@@ -935,7 +935,7 @@ export class ProjectService {
     if (project.activeProfessors && project.activeProfessors.length > 0) {
       for (const profRel of project.activeProfessors) {
         if (profRel.active) {
-          await this.activeProfessorProjectRepository.remove(profRel); // ACÁ
+          await this.activeProfessorProjectRepository.remove(profRel);
         }
       }
     }

@@ -107,11 +107,11 @@ export class ProjectController {
     return this.projectService.remove(+id);
   }
 
-  @Patch(':id/status')
+  @Patch(':id/cancel')
   @Roles(Role.ADMIN)
   @UseGuards(AuthGuard, RolesGuard)
-  async changeStatus(@Param('id') id: string) {
-    return this.projectService.changeStatus(+id);
+  async cancelProject(@Param('id') id: string) {
+    return this.projectService.cancelProject(+id);
   }
 
   @Post(':id/join-professor')

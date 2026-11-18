@@ -19,7 +19,8 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { JwtPayload } from 'src/auth/types/jwt-payload.interface';
 import { MailService } from 'src/mail/mail.service';
 import { ChangePasswordDto } from 'src/auth/dto/change-password.dto';
-
+import { Ppp } from 'src/ppp/entities/ppp.entity';
+import { StudentWork } from 'src/student-work/entities/student-work.entity';
 @Injectable()
 export class UsersService {
   constructor(
@@ -31,6 +32,12 @@ export class UsersService {
 
     @InjectRepository(Professor)
     private professorsRepository: Repository<Professor>,
+
+    @InjectRepository(Ppp)
+    private pppRepository: Repository<Ppp>,
+
+    @InjectRepository(StudentWork)
+    private studentWorkRepository: Repository<StudentWork>,
 
     private readonly mailService: MailService,
 
@@ -201,10 +208,9 @@ export class UsersService {
     if (id === requester.id) {
       throw new BadRequestException('No puedes eliminar tu propia cuenta');
     }
+
     const user = await this.usersRepository.findOne({ where: { id } });
-    if (!user) {
-      throw new NotFoundException('Usuario no encontrado');
-    }
+    if (!user) throw new NotFoundException('Usuario no encontrado');
 
     if (
       (user.role === Role.ADMIN || user.role === Role.SUPERADMIN) &&
@@ -215,23 +221,69 @@ export class UsersService {
       );
     }
 
-    try {
-      if (user.role === Role.STUDENT) {
-        await this.studentsRepository.delete({ id_user: id });
-      } else if (user.role === Role.PROFESSOR) {
-        await this.professorsRepository.delete({ id_user: id });
+    if (user.role === Role.STUDENT) {
+      const student = await this.studentsRepository.findOne({
+        where: { id_user: id },
+        relations: ['activeProjects'],
+      });
+      if (
+        student &&
+        student.activeProjects &&
+        student.activeProjects.length > 0
+      ) {
+        throw new BadRequestException(
+          'El estudiante participa en un Proyecto (TFI). Debe desactivar su cuenta.',
+        );
       }
 
-      await this.usersRepository.delete(id);
+      const pppCount = await this.pppRepository.count({
+        where: { student: { id_user: id } },
+      });
+      if (pppCount > 0) {
+        throw new BadRequestException(
+          'El estudiante tiene registros en Prácticas Pre-Profesionales (PPP). Debe desactivar su cuenta.',
+        );
+      }
+    } else if (user.role === Role.PROFESSOR) {
+      const professor = await this.professorsRepository.findOne({
+        where: { id_user: id },
+        relations: ['activeProjects'],
+      });
+      if (
+        professor &&
+        professor.activeProjects &&
+        professor.activeProjects.length > 0
+      ) {
+        throw new BadRequestException(
+          'El docente está asignado como tutor en un Proyecto. Debe desactivar su cuenta.',
+        );
+      }
 
-      return {
-        message: 'Usuario eliminado permanentemente',
-      };
-    } catch {
-      throw new BadRequestException(
-        'No se puede eliminar el usuario de forma permanente porque tiene historial o proyectos asociados. Debe cambiar su estado a inactivo.',
-      );
+      const evaluationsCount = await this.studentWorkRepository.count({
+        where: [
+          { lastReviewedBy: { id_user: id } },
+          { lastTutoredBy: { id_user: id } },
+        ],
+      });
+      if (evaluationsCount > 0) {
+        throw new BadRequestException(
+          'El docente ha participado como evaluador calificando proyectos. Debe desactivar su cuenta.',
+        );
+      }
     }
+
+    if (user.role === Role.STUDENT) {
+      await this.studentsRepository.delete({ id_user: id });
+    } else if (user.role === Role.PROFESSOR) {
+      await this.professorsRepository.delete({ id_user: id });
+    }
+
+    await this.usersRepository.delete(id);
+
+    return {
+      message:
+        'Usuario eliminado permanentemente del sistema (no poseía historial).',
+    };
   }
 
   async createProfessor(

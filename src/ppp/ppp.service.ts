@@ -709,6 +709,17 @@ export class PppService {
       );
     }
 
+    if (
+      ppp.status === PppStatus.IN_REVIEW ||
+      ppp.status === PppStatus.OBSERVED ||
+      ppp.status === PppStatus.APPROVED ||
+      ppp.status === PppStatus.DISAPPROVED
+    ) {
+      throw new BadRequestException(
+        'No se puede dar de baja una PPP que ya cuenta con documentación subida o resolución académica.',
+      );
+    }
+
     if (ppp.isSiuLoaded) {
       throw new BadRequestException(
         'No se puede dar de baja una PPP que ya fue asentada en SIU Guaraní',

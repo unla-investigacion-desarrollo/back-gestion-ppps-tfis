@@ -8,7 +8,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { StudentWork, StudentWorkStatus } from './entities/student-work.entity';
-import { Project } from 'src/project/entities/project.entity';
+import { Project, ProjectStatus } from 'src/project/entities/project.entity';
 import { Professor } from 'src/users/entities/professor.entity';
 import { Student } from 'src/users/entities/student.entity';
 import { CreateStudentWorkDto } from './dto/create-student-work.dto';
@@ -523,6 +523,15 @@ export class StudentWorkService {
 
     if (!work) {
       throw new NotFoundException('Entrega no encontrada');
+    }
+
+    if (
+      work.project.status === ProjectStatus.FINALIZED ||
+      work.project.status === ProjectStatus.CANCELLED
+    ) {
+      throw new BadRequestException(
+        'No se puede calificar ni modificar la nota de un proyecto que ya se encuentra finalizado o cancelado.',
+      );
     }
 
     if (

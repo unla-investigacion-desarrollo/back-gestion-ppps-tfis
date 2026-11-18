@@ -195,23 +195,33 @@ export class ProjectController {
   }
 
   @Patch(':id/remove-student/:studentId')
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.PROFESSOR)
   @UseGuards(AuthGuard, RolesGuard)
   async removeStudent(
     @Param('id') id: string,
     @Param('studentId') studentId: string,
+    @Request() req: Request & { user: JwtPayload },
   ) {
-    return this.projectService.removeStudentFromProject(+id, +studentId);
+    return this.projectService.removeStudentFromProject(
+      +id,
+      +studentId,
+      req.user,
+    );
   }
 
   @Patch(':id/remove-professor/:professorId')
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.PROFESSOR)
   @UseGuards(AuthGuard, RolesGuard)
   async removeProfessor(
     @Param('id') id: string,
     @Param('professorId') professorId: string,
+    @Request() req: Request & { user: JwtPayload },
   ) {
-    return this.projectService.removeProfessorFromProject(+id, +professorId);
+    return this.projectService.removeProfessorFromProject(
+      +id,
+      +professorId,
+      req.user,
+    );
   }
 
   @Patch(':id/finalize')

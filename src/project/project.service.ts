@@ -951,7 +951,21 @@ export class ProjectService {
     };
   }
 
-  async removeStudentFromProject(id: number, studentId: number) {
+  async removeStudentFromProject(
+    id: number,
+    studentId: number,
+    user: JwtPayload,
+  ) {
+    if (user.role === Role.PROFESSOR) {
+      const professor = await this.professorRepository.findOne({
+        where: { id_user: user.id },
+      });
+      if (professor && professor.isTutor) {
+        throw new ForbiddenException(
+          'Los tutores no tienen permiso para desvincular estudiantes',
+        );
+      }
+    }
     const relation = await this.activeStudentProjectRepository.findOne({
       where: {
         student: { id_user: studentId },
@@ -971,7 +985,21 @@ export class ProjectService {
     return { message: 'Estudiante desvinculado del proyecto exitosamente' };
   }
 
-  async removeProfessorFromProject(id: number, professorId: number) {
+  async removeProfessorFromProject(
+    id: number,
+    professorId: number,
+    user: JwtPayload,
+  ) {
+    if (user.role === Role.PROFESSOR) {
+      const professor = await this.professorRepository.findOne({
+        where: { id_user: user.id },
+      });
+      if (professor && professor.isTutor) {
+        throw new ForbiddenException(
+          'Los tutores no tienen permiso para desvincular estudiantes',
+        );
+      }
+    }
     const relation = await this.activeProfessorProjectRepository.findOne({
       where: {
         professor: { id_user: professorId },

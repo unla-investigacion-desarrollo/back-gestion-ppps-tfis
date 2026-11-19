@@ -261,9 +261,27 @@ export class ProjectService {
   }
 
   async remove(id: number) {
-    const project = await this.projectsRepository.findOne({ where: { id } });
+    const project = await this.projectsRepository.findOne({
+      where: { id },
+      relations: ['studentWork'],
+    });
     if (!project) {
       throw new NotFoundException('Proyecto no encontrado');
+    }
+
+    if (
+      project.status === ProjectStatus.IN_PROGRESS ||
+      project.status === ProjectStatus.FINALIZED
+    ) {
+      throw new BadRequestException(
+        'No se puede eliminar un proyecto que está en curso o finalizado.',
+      );
+    }
+
+    if (project.studentWork) {
+      throw new BadRequestException(
+        'No se puede eliminar el proyecto porque ya posee entregas o historial de evaluación (en revisión, observado, aprobado o desaprobado).',
+      );
     }
 
     const hasStudents = await this.activeStudentProjectRepository.findOne({
@@ -920,6 +938,12 @@ export class ProjectService {
 
     if (!project) throw new NotFoundException('Proyecto no encontrado');
 
+    if (project.status === ProjectStatus.FINALIZED) {
+      throw new BadRequestException(
+        'No se puede cancelar un proyecto que ya está finalizado.',
+      );
+    }
+
     if (project.status === ProjectStatus.CANCELLED) {
       project.status = ProjectStatus.PENDING;
       await this.projectsRepository.save(project);
@@ -973,11 +997,27 @@ export class ProjectService {
         project: { id: id },
         active: true,
       },
+      relations: ['project', 'project.studentWork'],
     });
 
     if (!relation) {
       throw new NotFoundException(
         'El estudiante no se encuentra activo en este proyecto',
+      );
+    }
+    const finalWorkStatuses = [
+      StudentWorkStatus.APPROVED,
+      StudentWorkStatus.DISAPPROVED,
+      StudentWorkStatus.ABSENT,
+    ];
+
+    if (
+      relation.project.status === ProjectStatus.FINALIZED ||
+      (relation.project.studentWork &&
+        finalWorkStatuses.includes(relation.project.studentWork.status))
+    ) {
+      throw new BadRequestException(
+        'No se puede desvincular al usuario de un proyecto finalizado o que ya tiene una calificación definitiva (aprobado, desaprobado o ausente).',
       );
     }
 
@@ -1007,11 +1047,28 @@ export class ProjectService {
         project: { id: id },
         active: true,
       },
+      relations: ['project', 'project.studentWork'],
     });
 
     if (!relation) {
       throw new NotFoundException(
         'El docente no se encuentra activo en este proyecto',
+      );
+    }
+
+    const finalWorkStatuses = [
+      StudentWorkStatus.APPROVED,
+      StudentWorkStatus.DISAPPROVED,
+      StudentWorkStatus.ABSENT,
+    ];
+
+    if (
+      relation.project.status === ProjectStatus.FINALIZED ||
+      (relation.project.studentWork &&
+        finalWorkStatuses.includes(relation.project.studentWork.status))
+    ) {
+      throw new BadRequestException(
+        'No se puede desvincular al docente de un proyecto finalizado o que ya tiene una calificación definitiva (aprobado, desaprobado o ausente).',
       );
     }
 

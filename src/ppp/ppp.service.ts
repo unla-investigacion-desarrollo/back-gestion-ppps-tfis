@@ -223,6 +223,20 @@ export class PppService {
       );
     }
 
+    const alreadyApprovedThisProposal = await this.pppRepository.findOne({
+      where: {
+        student: { id_user: student.id_user },
+        proposal: { id: proposalId },
+        status: PppStatus.APPROVED,
+      },
+    });
+
+    if (alreadyApprovedThisProposal) {
+      throw new ConflictException(
+        'Ya aprobaste esta propuesta de PPP anteriormente. No podés volver a postularte a la misma.',
+      );
+    }
+
     const application = this.pppRepository.create({
       student,
       proposal,
@@ -341,9 +355,7 @@ export class PppService {
     await this.validateNotTutor(user);
 
     const ppps = await this.pppRepository.find({
-      where: {
-        isActive: true,
-      },
+      where: [{ isActive: true }, { isSiuLoaded: true }],
       relations: ['student', 'student.user', 'proposal'],
     });
 
@@ -786,10 +798,16 @@ export class PppService {
 
   async findMyApplications(user: JwtPayload) {
     const applications = await this.pppRepository.find({
-      where: {
-        student: { id_user: user.id },
-        isActive: true,
-      },
+      where: [
+        {
+          student: { id_user: user.id },
+          isActive: true,
+        },
+        {
+          student: { id_user: user.id },
+          isSiuLoaded: true,
+        },
+      ],
       relations: ['proposal'],
     });
 

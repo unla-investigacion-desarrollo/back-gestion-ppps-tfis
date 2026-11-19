@@ -26,6 +26,7 @@ import { PppSetting } from './entities/ppp-setting.entity';
 import { MailService } from 'src/mail/mail.service';
 import { ConfigService } from '@nestjs/config';
 import { UpdatePppProposalDto } from './dto/update-ppp-proposal.dto';
+import { create } from 'domain';
 
 @Injectable()
 export class PppService {
@@ -180,6 +181,7 @@ export class PppService {
       title: proposal.title,
       description: proposal.description,
       isOpen: proposal.isOpen,
+      createdAt: proposal.createdAt,
       applicants: proposal.applications.map((app) => ({
         applicationId: app.id,
         status: app.status,

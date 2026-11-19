@@ -387,15 +387,7 @@ export class ProjectService {
 
     if (!student) throw new NotFoundException('Estudiante no encontrado');
 
-    const activeCount = await this.activeStudentProjectRepository.count({
-      where: { student: { id_user: user.id }, active: true },
-    });
-
-    if (activeCount >= 1) {
-      throw new ForbiddenException(
-        'Ya estás participando en un proyectos activos',
-      );
-    }
+    await this.validateStudentCanJoinProject(user.id);
 
     const existingRelation = await this.activeStudentProjectRepository.findOne({
       where: {
@@ -439,18 +431,7 @@ export class ProjectService {
       }
     }
 
-    const alreadyActiveCount = await this.activeStudentProjectRepository.count({
-      where: {
-        student: { id_user: studentRequestId },
-        active: true,
-      },
-    });
-
-    if (alreadyActiveCount >= 1) {
-      throw new BadRequestException(
-        'El estudiante ya se encuentra activo en otro proyecto.',
-      );
-    }
+    await this.validateStudentCanJoinProject(studentRequestId);
 
     const request = await this.activeStudentProjectRepository.findOne({
       where: {
@@ -1123,5 +1104,37 @@ export class ProjectService {
       id: project.id,
       status: project.status,
     };
+  }
+
+  private async validateStudentCanJoinProject(studentId: number) {
+    const studentProjects = await this.activeStudentProjectRepository.find({
+      where: {
+        student: { id_user: studentId },
+        active: true,
+      },
+      relations: ['project', 'project.studentWork'],
+    });
+
+    const hasActiveProject = studentProjects.some(
+      (rel) =>
+        rel.project.status === ProjectStatus.PENDING ||
+        rel.project.status === ProjectStatus.IN_PROGRESS,
+    );
+
+    if (hasActiveProject) {
+      throw new ForbiddenException(
+        'El estudiante ya está participando en un proyecto activo.',
+      );
+    }
+
+    const hasApprovedTfi = studentProjects.some(
+      (rel) => rel.project.studentWork?.status === StudentWorkStatus.APPROVED,
+    );
+
+    if (hasApprovedTfi) {
+      throw new ForbiddenException(
+        'El estudiante ya posee un TFI aprobado y no puede iniciar un nuevo proyecto.',
+      );
+    }
   }
 }

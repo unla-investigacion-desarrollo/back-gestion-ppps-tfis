@@ -745,6 +745,7 @@ export class PppService {
 
     const proposal = await this.proposalRepository.findOne({
       where: { id },
+      relations: ['applications'],
     });
 
     if (!proposal) {
@@ -760,18 +761,18 @@ export class PppService {
     proposal.isOpen = dto.isOpen;
     await this.proposalRepository.save(proposal);
 
-    if (!dto.isOpen) {
-      await this.pppRepository.update(
-        {
-          proposal: { id: id },
-          status: PppStatus.PENDING_APPLICATION,
-          isActive: true,
-        },
-        {
-          status: PppStatus.APPLICATION_REJECTED,
-          isActive: false,
-        },
-      );
+    if (
+      !dto.isOpen &&
+      proposal.applications &&
+      proposal.applications.length > 0
+    ) {
+      for (const app of proposal.applications) {
+        if (app.status === PppStatus.PENDING_APPLICATION && app.isActive) {
+          app.status = PppStatus.APPLICATION_REJECTED;
+          app.isActive = false;
+          await this.pppRepository.save(app);
+        }
+      }
     }
 
     return {

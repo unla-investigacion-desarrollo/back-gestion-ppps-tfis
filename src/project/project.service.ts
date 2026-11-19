@@ -153,6 +153,7 @@ export class ProjectService {
         title: project.title,
         description: project.description,
         projectType: project.projectType,
+        status: project.status,
       }));
     }
 

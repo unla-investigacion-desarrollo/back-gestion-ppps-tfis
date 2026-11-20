@@ -26,7 +26,6 @@ import { PppSetting } from './entities/ppp-setting.entity';
 import { MailService } from 'src/mail/mail.service';
 import { ConfigService } from '@nestjs/config';
 import { UpdatePppProposalDto } from './dto/update-ppp-proposal.dto';
-import { create } from 'domain';
 
 @Injectable()
 export class PppService {

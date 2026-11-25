@@ -98,9 +98,13 @@ MAIL_FROM=noreply@example.com
 # Frontend
 FRONTEND_URL=http://localhost:5173
 
-# Credenciales del Superadmin (Database Seeding)
+# Superadmin Credentials (Database Seeding)
 SUPERADMIN_EMAIL=<email_del_superadmin>
 SUPERADMIN_PASSWORD=<password_del_superadmin>
+
+# PPP PDF Documentation Recipients
+PPP_EVALUATOR_EMAIL=<email_evaluador_ppp>
+PPP_EVALUATOR_CC=<email_copia_ppp>
 ```
 
 ## Example connection

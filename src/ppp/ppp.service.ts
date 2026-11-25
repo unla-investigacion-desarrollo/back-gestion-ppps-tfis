@@ -874,10 +874,23 @@ export class PppService {
       throw new NotFoundException('Propuesta de PPP no encontrada');
     }
 
-    if (proposal.applications && proposal.applications.length > 0) {
+    const removableStatuses = [
+      PppStatus.APPLICATION_REJECTED,
+      PppStatus.DROPPED_OUT,
+    ];
+
+    const hasActiveApplications = proposal.applications?.some(
+      (app) => !removableStatuses.includes(app.status),
+    );
+
+    if (hasActiveApplications) {
       throw new BadRequestException(
-        'No se puede eliminar una propuesta que ya tiene alumnos postulados. Si no querés recibir más inscripciones, podés cerrarla editando su estado.',
+        'No se puede eliminar una propuesta que ya tiene alumnos postulados activos. Si no querés recibir más inscripciones, podés cerrarla editando su estado.',
       );
+    }
+
+    if (proposal.applications && proposal.applications.length > 0) {
+      await this.pppRepository.remove(proposal.applications);
     }
 
     await this.proposalRepository.remove(proposal);

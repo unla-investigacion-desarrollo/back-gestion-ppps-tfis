@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import {
   IsNotEmpty,
   IsOptional,
@@ -18,6 +19,9 @@ export class CreatePppProposalDto {
   })
   description: string;
 
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' && value.trim() === '' ? null : value,
+  )
   @IsString()
   @IsOptional()
   @IsUrl({}, { message: 'El enlace del Drive debe ser una URL válida' })

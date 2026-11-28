@@ -98,7 +98,7 @@ export class StudentWorkController {
   }
 
   @Patch(':id')
-  @Roles(Role.STUDENT)
+  @Roles(Role.STUDENT, Role.ADMIN)
   @UseGuards(AuthGuard, RolesGuard)
   update(
     @Param('id') id: string,

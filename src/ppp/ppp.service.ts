@@ -154,7 +154,8 @@ export class PppService {
       title: proposal.title,
       description: proposal.description,
       isOpen: proposal.isOpen,
-      driveFolderUrl: proposal.driveFolderUrl,
+      driveFolderUrl:
+        user.role === Role.STUDENT ? null : proposal.driveFolderUrl,
       createdAt: proposal.createdAt,
     }));
   }

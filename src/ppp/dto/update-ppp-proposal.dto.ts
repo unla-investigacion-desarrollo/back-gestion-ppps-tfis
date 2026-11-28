@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import { IsOptional, IsString, IsUrl, MaxLength } from 'class-validator';
 
 export class UpdatePppProposalDto {
@@ -12,6 +13,9 @@ export class UpdatePppProposalDto {
   })
   description?: string;
 
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' && value.trim() === '' ? null : value,
+  )
   @IsString()
   @IsOptional()
   @IsUrl({}, { message: 'El enlace del Drive debe ser una URL válida' })

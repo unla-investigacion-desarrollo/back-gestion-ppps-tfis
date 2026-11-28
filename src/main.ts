@@ -5,10 +5,7 @@ import { ValidationPipe } from '@nestjs/common';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   app.enableCors({
-    origin: [
-      'http://localhost:5173',
-      'https://front-gestion-ppps-tfis.onrender.com',
-    ],
+    origin: ['https://front-gestion-ppps-tfis.onrender.com', 'http://localhost:5173','https://front-gestion-ppps-tfis-imm4.onrender.com'],
     methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
     credentials: true,
   });

@@ -1,6 +1,7 @@
-import { IsBoolean, IsString } from 'class-validator';
+import { IsBoolean, IsOptional, IsString } from 'class-validator';
 
 export class CreateProfessorDto {
+  @IsOptional()
   @IsString()
   specialization: string;
 

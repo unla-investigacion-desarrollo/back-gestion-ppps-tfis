@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import {
   IsOptional,
   IsString,
@@ -33,6 +34,9 @@ export class UpdateUserDto {
   email?: string;
 
   @IsOptional()
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' && value.trim() === '' ? null : value,
+  )
   @IsString()
   fileNumber?: string;
 

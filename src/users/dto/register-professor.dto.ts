@@ -1,3 +1,4 @@
+import { Transform } from 'class-transformer';
 import {
   IsBoolean,
   IsEmail,
@@ -35,9 +36,13 @@ export class RegisterProfessorDto {
   password: string;
 
   @IsOptional()
+  @Transform(({ value }: { value: unknown }) =>
+    typeof value === 'string' && value.trim() === '' ? null : value,
+  )
   @IsString()
   fileNumber?: string;
 
+  @IsOptional()
   @IsString()
   specialization: string;
 
